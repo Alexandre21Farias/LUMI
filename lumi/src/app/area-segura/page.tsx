@@ -83,35 +83,6 @@ export default function AreaSeguraPage() {
     }
   }
 
-  const handleSaveCurrentAsCasa = async () => {
-    if (!latitude || !longitude) {
-      alert("Aguardando sinal de GPS do navegador...")
-      return
-    }
-    setIsSaving(true)
-    try {
-      // Procura se já existe uma área com o nome "Casa"
-      const existingCasa = safeAreas.find(a => a.name.toLowerCase() === 'casa')
-      const saved = await dbService.saveSafeArea({
-        id: existingCasa?.id,
-        name: "Casa",
-        lat: latitude,
-        lng: longitude,
-        radius: 150
-      })
-      alert("Localização atual cadastrada como 'Casa' com sucesso!")
-      
-      // Recarrega
-      const data = await dbService.getSafeAreas()
-      setSafeAreas(data)
-      const newSelected = data.find(a => a.id === saved.id) || saved
-      handleSelectArea(newSelected)
-    } catch (error) {
-      const err = error as Error
-      alert("Erro ao cadastrar Casa: " + err.message)
-    }
-    setIsSaving(false)
-  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -169,9 +140,6 @@ export default function AreaSeguraPage() {
             Configurar Áreas Seguras
           </h2>
           <div className="flex gap-2">
-            <Button onClick={handleSaveCurrentAsCasa} disabled variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-              <Home className="h-4 w-4 mr-2" /> Salvar Local Atual como Casa
-            </Button>
             <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Salvando..." : "Salvar Configurações"}
