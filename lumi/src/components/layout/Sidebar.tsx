@@ -13,7 +13,7 @@ const routes = [
   { label: "SOS", icon: Bell, href: "/sos", color: "text-red-500" },
   { label: "Pulseiras", icon: Watch, href: "/pulseiras", color: "text-orange-500" },
   { label: "Histórico", icon: History, href: "/historico", color: "text-slate-500" },
-  { label: "Design System", icon: Palette, href: "/system-design", color: "text-pink-400" },
+  //{ label: "Design System", icon: Palette, href: "/system-design", color: "text-pink-400" },
 ]
 
 export function Sidebar() {
@@ -39,8 +39,8 @@ export function Sidebar() {
                 href={route.href}
                 className={cn(
                   "text-sm group flex p-3 w-full justify-start font-semibold cursor-pointer rounded-xl transition-all duration-300 relative overflow-hidden",
-                  isActive 
-                    ? "text-white bg-white/10 shadow-lg shadow-white/5 border border-white/10 backdrop-blur-md" 
+                  isActive
+                    ? "text-white bg-white/10 shadow-lg shadow-white/5 border border-white/10 backdrop-blur-md"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 )}
               >
@@ -49,7 +49,7 @@ export function Sidebar() {
                 )}
                 <div className="flex items-center flex-1">
                   <route.icon className={cn(
-                    "h-5 w-5 mr-3 transition-transform group-hover:scale-110 duration-300", 
+                    "h-5 w-5 mr-3 transition-transform group-hover:scale-110 duration-300",
                     isActive ? "text-blue-400" : route.color
                   )} />
                   {route.label}
