@@ -17,12 +17,14 @@ export function useGeolocation() {
 
   useEffect(() => {
     if (!('geolocation' in navigator)) {
-      setLocation((prev) => ({
-        ...prev,
-        error: 'Geolocalização não suportada no seu navegador',
-        loading: false,
-      }))
-      return
+      const timer = setTimeout(() => {
+        setLocation((prev) => ({
+          ...prev,
+          error: 'Geolocalização não suportada no seu navegador',
+          loading: false,
+        }))
+      }, 0)
+      return () => clearTimeout(timer)
     }
 
     const successHandler = (position: GeolocationPosition) => {

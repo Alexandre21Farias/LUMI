@@ -1,11 +1,51 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Watch, MapPin, Battery, Droplets, Clock, Activity } from "lucide-react"
+import { Watch, MapPin, Battery, Droplets, Activity, Plus } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+
+type Bracelet = {
+  id: string
+  code: string
+  child_id: string | null
+  battery: number
+  is_connected: boolean
+  color: string
+  water_resistant: boolean
+  created_at: string
+  children?: {
+    name: string
+    photo_url: string
+  }
+}
 
 export default function PulseirasPage() {
+  const [bracelets, setBracelets] = useState<Bracelet[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchBracelets = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('bracelets')
+        .select('*, children(name, photo_url)')
+        .order('created_at', { ascending: false })
+      
+      if (!error && data) {
+        setBracelets(data)
+      }
+      setLoading(false)
+    }
+
+    const timer = setTimeout(() => {
+      fetchBracelets()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -16,97 +56,98 @@ export default function PulseirasPage() {
           </h2>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Pulseira Ativa */}
-          <Card className="shadow-sm border-0 bg-white hover:shadow-md transition-shadow">
-            <CardHeader className="pb-4 flex flex-row items-start justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold text-slate-800">LUMI-001</CardTitle>
-                <p className="text-sm text-slate-500 mt-1 flex items-center">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 mr-2"></span>
-                  Cor: Azul bebê
-                </p>
+        {loading ? (
+          <div className="text-center py-12 text-slate-500">Carregando pulseiras...</div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {bracelets.map((bracelet) => (
+              <Card key={bracelet.id} className="shadow-sm border-0 bg-white hover:shadow-md transition-shadow relative group">
+                <CardHeader className="pb-4 flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-800">{bracelet.code}</CardTitle>
+                    <p className="text-sm text-slate-500 mt-1 flex items-center">
+                      <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: bracelet.color || '#94a3b8' }}></span>
+                      Cor: {bracelet.color || 'Padrão'}
+                    </p>
+                  </div>
+                  <Badge className={`border-0 ${bracelet.is_connected ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-700 hover:bg-slate-100'}`}>
+                    {bracelet.is_connected ? 'Ativa' : 'Desconectada'}
+                  </Badge>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                          <Battery className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">Bateria</p>
+                          <p className="text-xs text-slate-500">
+                            {bracelet.battery > 20 ? 'Boa condição' : 'Bateria Baixa'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`font-bold ${bracelet.battery > 20 ? 'text-emerald-600' : 'text-red-600'}`}>{bracelet.battery}%</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                          <MapPin className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">GPS</p>
+                          <p className="text-xs text-slate-500">{bracelet.is_connected ? 'Sinal forte' : 'Sem sinal'}</p>
+                        </div>
+                      </div>
+                      <span className={`font-bold ${bracelet.is_connected ? 'text-blue-600' : 'text-slate-500'}`}>
+                        {bracelet.is_connected ? 'Conectado' : 'Offline'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
+                          <Droplets className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">Resistência à água</p>
+                        </div>
+                      </div>
+                      <span className="font-bold text-cyan-600">{bracelet.water_resistant ? 'Sim' : 'Não'}</span>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                      <p className="text-sm text-slate-500 mb-2 flex items-center">
+                        <Activity className="h-4 w-4 mr-2" /> Vinculada a:
+                      </p>
+                      {bracelet.children ? (
+                        <div className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={bracelet.children.photo_url} className="w-8 h-8 rounded-full" alt={bracelet.children.name} />
+                          <span className="font-medium text-slate-900">{bracelet.children.name}</span>
+                        </div>
+                      ) : (
+                        <span className="font-medium text-slate-500">Nenhuma criança vinculada</span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            <Card className="shadow-sm border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-8 text-center hover:bg-slate-100 transition-colors cursor-pointer">
+              <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                <Plus className="h-8 w-8" />
               </div>
-              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0">
-                Ativa
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
-                      <Battery className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Bateria</p>
-                      <p className="text-xs text-slate-500">Boa condição</p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-emerald-600">87%</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">GPS</p>
-                      <p className="text-xs text-slate-500">Sinal forte</p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-blue-600">Conectado</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
-                      <Droplets className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Resistência à água</p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-cyan-600">Sim</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-200 text-slate-600 rounded-lg">
-                      <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Última atualização</p>
-                    </div>
-                  </div>
-                  <span className="font-medium text-slate-700">Agora</span>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100">
-                  <p className="text-sm text-slate-500 mb-2 flex items-center">
-                    <Activity className="h-4 w-4 mr-2" /> Vinculada a:
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <img src="https://ui-avatars.com/api/?name=Joao+Silva&background=2563eb&color=fff" className="w-8 h-8 rounded-full" alt="João" />
-                    <span className="font-medium text-slate-900">João Silva</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Adicionar nova pulseira placeholder */}
-          <Card className="shadow-sm border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-8 text-center hover:bg-slate-100 transition-colors cursor-pointer">
-            <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4 text-slate-400">
-              <Watch className="h-8 w-8" />
-            </div>
-            <h3 className="font-bold text-slate-700 mb-1">Adicionar Pulseira</h3>
-            <p className="text-sm text-slate-500 max-w-[200px]">
-              Vincule uma nova pulseira LUMI à sua conta.
-            </p>
-          </Card>
-        </div>
+              <h3 className="font-bold text-slate-700 mb-1">Adicionar Pulseira</h3>
+              <p className="text-sm text-slate-500 max-w-[200px]">
+                Vincule uma nova pulseira LUMI à sua conta.
+              </p>
+            </Card>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

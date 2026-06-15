@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMI — System Design</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --lumi-sky: #AED6F1;
+            --lumi-sky-light: #D6EAF8;
+            --lumi-sky-pale: #EBF5FB;
+            --lumi-sky-deep: #5DADE2;
+            --lumi-sky-dark: #1A5276;
+            --lumi-white: #FFFFFF;
+            --lumi-off-white: #F7FBFE;
+            --lumi-ink: #0D2137;
+            --lumi-ink-mid: #2C5F7A;
+            --lumi-ink-light: #5B8FA8;
+            --lumi-accent: #3AAFCB;
+            --lumi-accent-pale: #E0F4F8;
+
+            --font-display: 'Sora', sans-serif;
+            --font-body: 'Inter', sans-serif;
+
+            --r-sm: 8px;
+            --r-md: 14px;
+            --r-lg: 20px;
+            --r-pill: 999px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--lumi-off-white);
+            color: var(--lumi-ink);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        /* ── COVER ── */
+        .cover {
+            background: var(--lumi-ink);
+            color: var(--lumi-white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 80px 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover::before {
+            content: '';
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            background: var(--lumi-sky-deep);
+            opacity: 0.12;
+            top: -140px;
+            right: -100px;
+        }
+
+        .cover::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: var(--lumi-accent);
+            opacity: 0.08;
+            bottom: -60px;
+            left: 200px;
+        }
+
+        .cover-label {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--lumi-sky);
+            margin-bottom: 32px;
+        }
+
+        .cover h1 {
+            font-family: var(--font-display);
+            font-size: clamp(52px, 8vw, 88px);
+            font-weight: 700;
+            line-height: 1.02;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cover h1 span {
+            color: var(--lumi-sky);
+        }
+
+        .cover-sub {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.55);
+            font-weight: 300;
+            max-width: 380px;
+            position: relative;
+            z-index: 1;
+            line-height: 1.6;
+        }
+
+        .cover-meta {
+            margin-top: 80px;
+            display: flex;
+            gap: 40px;
+            position: relative;
+            z-index: 1;
+            flex-wrap: wrap;
+        }
+
+        .cover-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cover-meta-item span:first-child {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .cover-meta-item span:last-child {
+            font-size: 14px;
+            color: var(--lumi-sky-light);
+            font-weight: 400;
+        }
+
+        /* ── NAV ── */
+        .toc-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(247, 251, 254, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--lumi-sky-light);
+            padding: 0 60px;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            overflow-x: auto;
+        }
+
+        .toc-nav a {
+            display: block;
+            padding: 16px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--lumi-ink-light);
+            text-decoration: none;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .toc-nav a:hover {
+            color: var(--lumi-ink);
+            border-bottom-color: var(--lumi-sky-deep);
+        }
+
+        /* ── SECTIONS ── */
+        .section {
+            padding: 80px 60px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section+.section {
+            border-top: 1px solid var(--lumi-sky-light);
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--lumi-sky-deep);
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--lumi-ink);
+            margin-bottom: 40px;
+            line-height: 1.2;
+        }
+
+        .section-desc {
+            font-size: 15px;
+            color: var(--lumi-ink-mid);
+            max-width: 580px;
+            margin-bottom: 48px;
+            line-height: 1.75;
+        }
+
+        /* ── COLORS ── */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .color-swatch {
+            border-radius: var(--r-md);
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .swatch-block {
+            height: 90px;
+        }
+
+        .swatch-info {
+            background: var(--lumi-white);
+            padding: 10px 14px;
+        }
+
+        .swatch-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--lumi-ink);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .swatch-hex {
+            font-size: 11px;
+            color: var(--lumi-ink-light);
+            font-family: 'Courier New', monospace;
+        }
+
+        .swatch-role {
+            font-size: 11px;
+            color: var(--lumi-ink-light);
+            margin-top: 2px;
+        }
+
+        /* ── COLOR PALETTE SECTION ── */
+        .palette-group {
+            margin-bottom: 40px;
+        }
+
+        .palette-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--lumi-ink-light);
+            margin-bottom: 16px;
+        }
+
+        /* ── TYPOGRAPHY ── */
+        .type-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .type-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 32px;
+            align-items: start;
+            padding-bottom: 40px;
+            border-bottom: 1px solid var(--lumi-sky-light);
+        }
+
+        .type-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .type-meta {
+            padding-top: 4px;
+        }
+
+        .type-role {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--lumi-sky-deep);
+            margin-bottom: 6px;
+        }
+
+        .type-spec {
+            font-size: 12px;
+            color: var(--lumi-ink-light);
+            line-height: 1.8;
+        }
+
+        .type-sample-display {
+            font-family: var(--font-display);
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--lumi-ink);
+            line-height: 1;
+        }
+
+        .type-sample-h1 {
+            font-family: var(--font-display);
+            font-size: 36px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--lumi-ink);
+            line-height: 1.15;
+        }
+
+        .type-sample-h2 {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--lumi-ink);
+        }
+
+        .type-sample-body {
+            font-family: var(--font-body);
+            font-size: 16px;
+            color: var(--lumi-ink-mid);
+            max-width: 520px;
+            line-height: 1.75;
+        }
+
+        .type-sample-caption {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--lumi-ink-light);
+            letter-spacing: 0.04em;
+        }
+
+        /* ── SPACING ── */
+        .spacing-grid {
+            display: flex;
+            align-items: flex-end;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .spacing-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .spacing-block {
+            background: var(--lumi-sky);
+            border-radius: 4px;
+            width: 16px;
+        }
+
+        .spacing-label {
+            font-size: 11px;
+            color: var(--lumi-ink-light);
+            font-family: monospace;
+        }
+
+        /* ── RADIUS ── */
+        .radius-row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .radius-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .radius-box {
+            width: 80px;
+            height: 60px;
+            background: var(--lumi-sky-light);
+            border: 1.5px solid var(--lumi-sky-deep);
+        }
+
+        .radius-label {
+            font-size: 11px;
+            color: var(--lumi-ink-light);
+            font-family: monospace;
+            text-align: center;
+        }
+
+        /* ── BUTTONS ── */
+        .component-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .component-group-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--lumi-ink-light);
+            margin-bottom: 12px;
+            margin-top: 28px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: var(--r-pill);
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        .btn:hover {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--lumi-ink);
+            color: var(--lumi-white);
+        }
+
+        .btn-secondary {
+            background: var(--lumi-sky-light);
+            color: var(--lumi-ink-dark, var(--lumi-ink));
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--lumi-ink);
+            border: 1.5px solid var(--lumi-sky-deep);
+        }
+
+        .btn-sky {
+            background: var(--lumi-sky-deep);
+            color: var(--lumi-white);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--lumi-ink-light);
+            border: 1.5px solid var(--lumi-sky-light);
+        }
+
+        .btn-danger {
+            background: #E74C3C;
+            color: var(--lumi-white);
+        }
+
+        .btn-sm {
+            padding: 6px 16px;
+            font-size: 12px;
+        }
+
+        .btn-lg {
+            padding: 14px 32px;
+            font-size: 16px;
+        }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: var(--r-pill);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-info {
+            background: var(--lumi-sky-pale);
+            color: var(--lumi-sky-dark);
+        }
+
+        .badge-success {
+            background: #EAFAF1;
+            color: #1E8449;
+        }
+
+        .badge-warning {
+            background: #FEF9E7;
+            color: #9A7D0A;
+        }
+
+        .badge-danger {
+            background: #FDEDEC;
+            color: #C0392B;
+        }
+
+        .badge-neutral {
+            background: #F2F3F4;
+            color: #566573;
+        }
+
+        .badge-dot::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* ── INPUT ── */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 320px;
+        }
+
+        .input-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--lumi-ink);
+        }
+
+        .input-field {
+            padding: 10px 14px;
+            border: 1.5px solid var(--lumi-sky-light);
+            border-radius: var(--r-sm);
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--lumi-ink);
+            background: var(--lumi-white);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .input-field:focus {
+            border-color: var(--lumi-sky-deep);
+        }
+
+        .input-field.error {
+            border-color: #E74C3C;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: var(--lumi-ink-light);
+        }
+
+        .input-error-msg {
+            font-size: 12px;
+            color: #C0392B;
+        }
+
+        /* ── CARDS ── */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--lumi-white);
+            border: 1px solid var(--lumi-sky-light);
+            border-radius: var(--r-lg);
+            padding: 24px;
+        }
+
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--r-md);
+            background: var(--lumi-sky-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .card-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--lumi-sky-dark);
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--lumi-ink);
+            margin-bottom: 6px;
+        }
+
+        .card-body {
+            font-size: 13px;
+            color: var(--lumi-ink-light);
+            line-height: 1.6;
+        }
+
+        .card-featured {
+            border: 1.5px solid var(--lumi-sky-deep);
+            background: var(--lumi-sky-pale);
+        }
+
+        .card-dark {
+            background: var(--lumi-ink);
+            border-color: var(--lumi-ink);
+        }
+
+        .card-dark .card-icon {
+            background: rgba(174, 214, 241, 0.12);
+        }
+
+        .card-dark .card-icon svg {
+            stroke: var(--lumi-sky-light);
+        }
+
+        .card-dark .card-title {
+            color: var(--lumi-white);
+        }
+
+        .card-dark .card-body {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ── AVATAR ── */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .avatar-sky {
+            background: var(--lumi-sky-pale);
+            color: var(--lumi-sky-dark);
+        }
+
+        .avatar-ink {
+            background: var(--lumi-ink);
+            color: var(--lumi-white);
+        }
+
+        .avatar-accent {
+            background: var(--lumi-accent-pale);
+            color: var(--lumi-accent);
+        }
+
+        /* ── LOGO SECTION ── */
+        .logo-display {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .logo-mark {
+            width: 48px;
+            height: 48px;
+            background: var(--lumi-sky-deep);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-mark svg {
+            width: 28px;
+            height: 28px;
+            fill: none;
+            stroke: white;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .logo-wordmark {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--lumi-ink);
+        }
+
+        .logo-tagline {
+            font-size: 12px;
+            color: var(--lumi-ink-light);
+            letter-spacing: 0.06em;
+        }
+
+        .logo-variants {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            margin-top: 32px;
+        }
+
+        .logo-on-dark {
+            background: var(--lumi-ink);
+            border-radius: var(--r-lg);
+            padding: 28px 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-on-dark .logo-wordmark {
+            color: var(--lumi-white);
+        }
+
+        .logo-on-sky {
+            background: var(--lumi-sky-deep);
+            border-radius: var(--r-lg);
+            padding: 28px 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-on-sky .logo-mark {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-on-sky .logo-wordmark {
+            color: var(--lumi-white);
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            height: 1px;
+            background: var(--lumi-sky-light);
+            margin: 40px 0;
+        }
+
+        /* ── ICONOGRAPHY ── */
+        .icon-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: var(--r-md);
+            background: var(--lumi-sky-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-box svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--lumi-sky-dark);
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon-name {
+            font-size: 11px;
+            color: var(--lumi-ink-light);
+            text-align: center;
+        }
+
+        /* ── APP MOCKUP ── */
+        .mockup-phone {
+            width: 260px;
+            background: var(--lumi-ink);
+            border-radius: 36px;
+            padding: 24px 16px;
+            border: 6px solid #1a2f42;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.18);
+            margin: 0 auto;
+        }
+
+        .phone-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 8px;
+            margin-bottom: 20px;
+        }
+
+        .phone-time {
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .phone-screen {
+            background: var(--lumi-off-white);
+            border-radius: 24px;
+            overflow: hidden;
+            min-height: 480px;
+        }
+
+        .phone-header {
+            background: var(--lumi-sky-deep);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .phone-header-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .phone-map-placeholder {
+            background: var(--lumi-sky-pale);
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .phone-map-pin {
+            width: 32px;
+            height: 32px;
+            background: var(--lumi-sky-deep);
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .phone-content {
+            padding: 14px;
+        }
+
+        .phone-stat-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .phone-stat {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid var(--lumi-sky-light);
+        }
+
+        .phone-stat-label {
+            font-size: 10px;
+            color: var(--lumi-ink-light);
+            margin-bottom: 4px;
+        }
+
+        .phone-stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--lumi-ink);
+        }
+
+        .phone-sos-btn {
+            width: 100%;
+            background: #E74C3C;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        /* ── ILLUSTRATION: BRACELET ── */
+        .bracelet-hero {
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+        }
+
+        /* ── TOKENS TABLE ── */
+        .token-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-bottom: 32px;
+        }
+
+        .token-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--lumi-ink-light);
+            border-bottom: 1.5px solid var(--lumi-sky-light);
+        }
+
+        .token-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--lumi-sky-light);
+            vertical-align: middle;
+        }
+
+        .token-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .token-name {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--lumi-ink);
+        }
+
+        .token-preview-color {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: inline-block;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        /* ── VOICE SECTION ── */
+        .voice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .voice-card {
+            background: var(--lumi-white);
+            border: 1px solid var(--lumi-sky-light);
+            border-radius: var(--r-md);
+            padding: 20px;
+        }
+
+        .voice-card.do {
+            border-left: 3px solid #27AE60;
+        }
+
+        .voice-card.dont {
+            border-left: 3px solid #E74C3C;
+        }
+
+        .voice-card-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .voice-card.do .voice-card-label {
+            color: #27AE60;
+        }
+
+        .voice-card.dont .voice-card-label {
+            color: #E74C3C;
+        }
+
+        .voice-card p {
+            font-size: 14px;
+            color: var(--lumi-ink-mid);
+            line-height: 1.6;
+        }
+
+        /* ── FOOTER ── */
+        .doc-footer {
+            background: var(--lumi-ink);
+            color: rgba(255, 255, 255, 0.5);
+            padding: 40px 60px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: gap;
+            gap: 16px;
+        }
+
+        .doc-footer strong {
+            color: var(--lumi-sky-light);
+        }
+
+        @media (max-width: 700px) {
+
+            .cover,
+            .section,
+            .toc-nav,
+            .doc-footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .cover h1 {
+                font-size: 44px;
+            }
+
+            .type-row {
+                grid-template-columns: 1fr;
+            }
+
+            .voice-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- COVER -->
+    <section class="cover">
+        <div class="cover-label">LUMI · Sistema de Design</div>
+        <h1>Design<br><span>System</span></h1>
+        <p class="cover-sub">Diretrizes visuais e de componentes para a pulseira inteligente de segurança infantil.</p>
+        <div class="cover-meta">
+            <div class="cover-meta-item">
+                <span>Versão</span>
+                <span>1.0.0</span>
+            </div>
+            <div class="cover-meta-item">
+                <span>Ano</span>
+                <span>2026</span>
+            </div>
+            <div class="cover-meta-item">
+                <span>Instituição</span>
+                <span>UNIFAN — Centro Universitário Nobre</span>
+            </div>
+            <div class="cover-meta-item">
+                <span>Produto</span>
+                <span>Pulseira Inteligente LUMI</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- NAV -->
+    <nav class="toc-nav">
+        <a href="#marca">Marca</a>
+        <a href="#cores">Cores</a>
+        <a href="#tipografia">Tipografia</a>
+        <a href="#espacamento">Espaçamento</a>
+        <a href="#componentes">Componentes</a>
+        <a href="#icones">Ícones</a>
+        <a href="#voz">Tom de voz</a>
+        <a href="#app">App mockup</a>
+    </nav>
+
+    <!-- MARCA -->
+    <section class="section" id="marca">
+        <div class="section-label">01 — Identidade</div>
+        <h2 class="section-title">Marca LUMI</h2>
+        <p class="section-desc">A marca LUMI traduz segurança, leveza e cuidado. O nome evoca luminosidade — uma
+            presença gentil que guia e protege. O logotipo combina a solidez da tipografia com um símbolo de
+            rastreamento que remete à localização e ao elo entre criança e família.</p>
+
+        <!-- Logo principal -->
+        <div class="logo-display">
+            <div class="logo-mark">
+                <svg viewBox="0 0 28 28">
+                    <circle cx="14" cy="12" r="6" />
+                    <path d="M14 18v7M10 22h8" />
+                    <circle cx="14" cy="12" r="2.5" fill="white" stroke="none" />
+                </svg>
+            </div>
+            <div>
+                <div class="logo-wordmark">LUMI</div>
+                <div class="logo-tagline">Conecta o que mais importa.</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div
+            style="margin-bottom: 12px; font-size: 12px; color: var(--lumi-ink-light); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">
+            Variações do logo</div>
+        <div class="logo-variants">
+            <div class="logo-on-dark">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 28 28">
+                        <circle cx="14" cy="12" r="6" />
+                        <path d="M14 18v7M10 22h8" />
+                        <circle cx="14" cy="12" r="2.5" fill="white" stroke="none" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="logo-wordmark">LUMI</div>
+                </div>
+            </div>
+            <div class="logo-on-sky">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 28 28">
+                        <circle cx="14" cy="12" r="6" />
+                        <path d="M14 18v7M10 22h8" />
+                        <circle cx="14" cy="12" r="2.5" fill="white" stroke="none" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="logo-wordmark">LUMI</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORES -->
+    <section class="section" id="cores">
+        <div class="section-label">02 — Identidade Visual</div>
+        <h2 class="section-title">Paleta de cores</h2>
+        <p class="section-desc">O sistema de cores da LUMI é construído em torno do azul bebê e branco — transmitindo
+            tranquilidade, segurança e confiança. O azul profundo ancora a identidade, enquanto tons claros criam
+            respiração visual e suavidade.</p>
+
+        <div class="palette-group">
+            <div class="palette-group-title">Cores primárias</div>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #AED6F1;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Azul Bebê</span>
+                        <div class="swatch-hex">#AED6F1</div>
+                        <div class="swatch-role">Cor principal da marca</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #5DADE2;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Azul Profundo</span>
+                        <div class="swatch-hex">#5DADE2</div>
+                        <div class="swatch-role">Destaque e interação</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #FFFFFF; border: 1px solid #e0ecf4;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Branco Puro</span>
+                        <div class="swatch-hex">#FFFFFF</div>
+                        <div class="swatch-role">Fundo e superfícies</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #0D2137;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Azul Noturno</span>
+                        <div class="swatch-hex">#0D2137</div>
+                        <div class="swatch-role">Texto e contraste</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="palette-group">
+            <div class="palette-group-title">Escala completa — Azul</div>
+            <div
+                style="display: flex; border-radius: var(--r-md); overflow: hidden; height: 64px; border: 1px solid rgba(0,0,0,0.06);">
+                <div style="flex:1; background:#EBF5FB;" title="#EBF5FB"></div>
+                <div style="flex:1; background:#D6EAF8;" title="#D6EAF8"></div>
+                <div style="flex:1; background:#AED6F1;" title="#AED6F1"></div>
+                <div style="flex:1; background:#85C1E9;" title="#85C1E9"></div>
+                <div style="flex:1; background:#5DADE2;" title="#5DADE2"></div>
+                <div style="flex:1; background:#3AAFCB;" title="#3AAFCB"></div>
+                <div style="flex:1; background:#2C5F7A;" title="#2C5F7A"></div>
+                <div style="flex:1; background:#1A5276;" title="#1A5276"></div>
+                <div style="flex:1; background:#0D2137;" title="#0D2137"></div>
+            </div>
+            <div style="display: flex; margin-top: 6px;">
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    50</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    100</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    200</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    300</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    400</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    500</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    600</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    700</div>
+                <div
+                    style="flex:1; font-size:10px; color:var(--lumi-ink-light); font-family:monospace; text-align:center;">
+                    900</div>
+            </div>
+        </div>
+
+        <div class="palette-group" style="margin-top: 40px;">
+            <div class="palette-group-title">Cores de status</div>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #27AE60;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Sucesso</span>
+                        <div class="swatch-hex">#27AE60</div>
+                        <div class="swatch-role">Conectado, área segura</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #F39C12;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Atenção</span>
+                        <div class="swatch-hex">#F39C12</div>
+                        <div class="swatch-role">Bateria baixa, alerta</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #E74C3C;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Perigo / SOS</span>
+                        <div class="swatch-hex">#E74C3C</div>
+                        <div class="swatch-role">Emergência, botão SOS</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-block" style="background: #F7FBFE; border: 1px solid #d6eaf8;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Fundo base</span>
+                        <div class="swatch-hex">#F7FBFE</div>
+                        <div class="swatch-role">Cor de fundo geral</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tokens table -->
+        <div style="margin-top: 48px;">
+            <div class="component-group-label">Design tokens — cores</div>
+            <table class="token-table">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Valor</th>
+                        <th>Amostra</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="token-name">--lumi-sky</td>
+                        <td class="token-name">#AED6F1</td>
+                        <td><span class="token-preview-color" style="background:#AED6F1;"></span></td>
+                        <td style="color:var(--lumi-ink-light); font-size:13px;">Cor primária da marca</td>
+                    </tr>
+                    <tr>
+                        <td class="token-name">--lumi-sky-deep</td>
+                        <td class="token-name">#5DADE2</td>
+                        <td><span class="token-preview-color" style="background:#5DADE2;"></span></td>
+                        <td style="color:var(--lumi-ink-light); font-size:13px;">Botões, links, destaques</td>
+                    </tr>
+                    <tr>
+                        <td class="token-name">--lumi-sky-pale</td>
+                        <td class="token-name">#EBF5FB</td>
+                        <td><span class="token-preview-color" style="background:#EBF5FB;"></span></td>
+                        <td style="color:var(--lumi-ink-light); font-size:13px;">Fundos de ícones, badges</td>
+                    </tr>
+                    <tr>
+                        <td class="token-name">--lumi-ink</td>
+                        <td class="token-name">#0D2137</td>
+                        <td><span class="token-preview-color" style="background:#0D2137;"></span></td>
+                        <td style="color:var(--lumi-ink-light); font-size:13px;">Texto principal, fundo escuro</td>
+                    </tr>
+                    <tr>
+                        <td class="token-name">--lumi-ink-mid</td>
+                        <td class="token-name">#2C5F7A</td>
+                        <td><span class="token-preview-color" style="background:#2C5F7A;"></span></td>
+                        <td style="color:var(--lumi-ink-light); font-size:13px;">Texto secundário</td>
+                    </tr>
+                    <tr>
+                        <td class="token-name">--lumi-white</td>
+                        <td class="token-name">#FFFFFF</td>
+                        <td><span class="token-preview-color"
+                                style="background:#FFFFFF; border: 1px solid #d6eaf8;"></span></td>
+                        <td style="color:var(--lumi-ink-light); font-size:13px;">Superfícies de componentes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- TIPOGRAFIA -->
+    <section class="section" id="tipografia">
+        <div class="section-label">03 — Tipografia</div>
+        <h2 class="section-title">Fontes e escala</h2>
+        <p class="section-desc">A tipografia da LUMI usa duas famílias: <strong>Sora</strong> para títulos e exibição —
+            moderna e amigável — e <strong>Inter</strong> para corpo e interface — legível e neutra.</p>
+
+        <div class="type-showcase">
+            <div class="type-row">
+                <div class="type-meta">
+                    <div class="type-role">Display</div>
+                    <div class="type-spec">Sora 700<br>56px / -0.03em<br>Line-height 1.0</div>
+                </div>
+                <div class="type-sample-display">LUMI</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <div class="type-role">Heading 1</div>
+                    <div class="type-spec">Sora 600<br>36px / -0.02em<br>Line-height 1.15</div>
+                </div>
+                <div class="type-sample-h1">Segurança sem distração</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <div class="type-role">Heading 2</div>
+                    <div class="type-spec">Sora 600<br>24px / 0em<br>Line-height 1.3</div>
+                </div>
+                <div class="type-sample-h2">Localização em tempo real</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <div class="type-role">Body</div>
+                    <div class="type-spec">Inter 400<br>16px / 0em<br>Line-height 1.75</div>
+                </div>
+                <div class="type-sample-body">O LUMI é uma pulseira inteligente infantil voltada para segurança e
+                    rastreamento em tempo real. Pensado para crianças de 1 a 12 anos, oferece tranquilidade sem
+                    incentivar o uso precoce de telas.</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <div class="type-role">Caption / Label</div>
+                    <div class="type-spec">Inter 500<br>12px / 0.04em<br>Uppercase</div>
+                </div>
+                <div class="type-sample-caption">STATUS DA CONEXÃO · GPS ATIVO · BATERIA 84%</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ESPAÇAMENTO -->
+    <section class="section" id="espacamento">
+        <div class="section-label">04 — Fundação</div>
+        <h2 class="section-title">Espaçamento e raios</h2>
+        <p class="section-desc">Sistema de espaçamento baseado em múltiplos de 4px, garantindo ritmo visual consistente
+            em toda a interface.</p>
+
+        <div class="component-group-label">Escala de espaçamento</div>
+        <div class="spacing-grid">
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:4px;"></div>
+                <div class="spacing-label">4px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:8px;"></div>
+                <div class="spacing-label">8px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:12px;"></div>
+                <div class="spacing-label">12px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:16px;"></div>
+                <div class="spacing-label">16px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:24px;"></div>
+                <div class="spacing-label">24px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:32px;"></div>
+                <div class="spacing-label">32px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:48px;"></div>
+                <div class="spacing-label">48px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:64px;"></div>
+                <div class="spacing-label">64px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-block" style="height:80px;"></div>
+                <div class="spacing-label">80px</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="component-group-label">Raios de borda</div>
+        <div class="radius-row">
+            <div class="radius-item">
+                <div class="radius-box" style="border-radius: 0px;"></div>
+                <div class="radius-label">0px<br>Nenhum</div>
+            </div>
+            <div class="radius-item">
+                <div class="radius-box" style="border-radius: 4px;"></div>
+                <div class="radius-label">4px<br>Sutil</div>
+            </div>
+            <div class="radius-item">
+                <div class="radius-box" style="border-radius: 8px;"></div>
+                <div class="radius-label">8px<br>Pequeno</div>
+            </div>
+            <div class="radius-item">
+                <div class="radius-box" style="border-radius: 14px;"></div>
+                <div class="radius-label">14px<br>Médio</div>
+            </div>
+            <div class="radius-item">
+                <div class="radius-box" style="border-radius: 20px;"></div>
+                <div class="radius-label">20px<br>Grande</div>
+            </div>
+            <div class="radius-item">
+                <div class="radius-box" style="border-radius: 999px;"></div>
+                <div class="radius-label">999px<br>Pílula</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COMPONENTES -->
+    <section class="section" id="componentes">
+        <div class="section-label">05 — Componentes</div>
+        <h2 class="section-title">Biblioteca de componentes</h2>
+        <p class="section-desc">Componentes reutilizáveis que compõem a interface do aplicativo LUMI. Cada peça foi
+            pensada para clareza e facilidade de uso pelos responsáveis.</p>
+
+        <!-- BOTÕES -->
+        <div class="component-group-label">Botões</div>
+        <div class="component-row">
+            <button class="btn btn-primary">Monitorar agora</button>
+            <button class="btn btn-sky">Ver localização</button>
+            <button class="btn btn-outline">Configurar área</button>
+            <button class="btn btn-ghost">Cancelar</button>
+        </div>
+        <div class="component-row">
+            <button class="btn btn-primary btn-sm">Pequeno</button>
+            <button class="btn btn-primary">Normal</button>
+            <button class="btn btn-primary btn-lg">Grande</button>
+        </div>
+        <div class="component-row">
+            <button class="btn btn-danger">🔴 Acionar SOS</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- BADGES -->
+        <div class="component-group-label">Badges e status</div>
+        <div class="component-row">
+            <span class="badge badge-success badge-dot">GPS ativo</span>
+            <span class="badge badge-info badge-dot">Conectado</span>
+            <span class="badge badge-warning badge-dot">Bateria baixa</span>
+            <span class="badge badge-danger badge-dot">Fora da área</span>
+            <span class="badge badge-neutral">Offline</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- INPUTS -->
+        <div class="component-group-label">Campos de entrada</div>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px;">
+            <div class="input-group">
+                <label class="input-label">Nome da criança</label>
+                <input class="input-field" type="text" placeholder="Ex: Sofia" value="Sofia Nascimento">
+                <span class="input-hint">Nome que aparece no mapa</span>
+            </div>
+            <div class="input-group">
+                <label class="input-label">E-mail do responsável</label>
+                <input class="input-field error" type="email" placeholder="email@exemplo.com">
+                <span class="input-error-msg">E-mail inválido ou já cadastrado.</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- CARDS -->
+        <div class="component-group-label">Cards</div>
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="10" r="4" />
+                        <path d="M12 14v7M9 19h6" />
+                    </svg>
+                </div>
+                <div class="card-title">Localização em tempo real</div>
+                <div class="card-body">Acompanhe onde a criança está a qualquer momento pelo mapa.</div>
+            </div>
+            <div class="card card-featured">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                </div>
+                <div class="card-title">Áreas seguras</div>
+                <div class="card-body">Defina zonas de conforto e receba alertas quando a criança sair.</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 8v4l3 3" />
+                    </svg>
+                </div>
+                <div class="card-title">Histórico de rotas</div>
+                <div class="card-body">Visualize por onde a criança passou ao longo do dia.</div>
+            </div>
+            <div class="card card-dark">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                </div>
+                <div class="card-title">Compartilhar com família</div>
+                <div class="card-body">Adicione múltiplos responsáveis para acompanhar juntos.</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- AVATARES -->
+        <div class="component-group-label">Avatares</div>
+        <div class="component-row">
+            <div class="avatar avatar-sky">SN</div>
+            <div class="avatar avatar-ink">JM</div>
+            <div class="avatar avatar-accent">AL</div>
+            <div class="avatar" style="background: var(--lumi-sky); color: var(--lumi-sky-dark);">GR</div>
+            <div class="avatar" style="background: #EAFAF1; color: #1E8449;">IV</div>
+        </div>
+    </section>
+
+    <!-- ÍCONES -->
+    <section class="section" id="icones">
+        <div class="section-label">06 — Iconografia</div>
+        <h2 class="section-title">Sistema de ícones</h2>
+        <p class="section-desc">Ícones de traço fino (stroke), sem preenchimento. Estilo minimalista e legível, sempre
+            com 1.8px de espessura e pontas arredondadas.</p>
+
+        <div class="icon-grid">
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="10" r="4" />
+                        <path d="M12 14v8M9 20h6" />
+                    </svg>
+                </div>
+                <div class="icon-name">localização</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                </div>
+                <div class="icon-name">segurança</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3" />
+                    </svg>
+                </div>
+                <div class="icon-name">bateria</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 012 1.18 2 2 0 014 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
+                    </svg>
+                </div>
+                <div class="icon-name">contato</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                </div>
+                <div class="icon-name">compartilhar</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M22 17H2a3 3 0 003-3V9a7 7 0 0114 0v5a3 3 0 003 3zm-8.27 4a2 2 0 01-3.46 0" />
+                    </svg>
+                </div>
+                <div class="icon-name">alerta</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </div>
+                <div class="icon-name">buscar</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
+                    </svg>
+                </div>
+                <div class="icon-name">responsável</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <polygon
+                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                </div>
+                <div class="icon-name">favorito</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0110 0v4" />
+                    </svg>
+                </div>
+                <div class="icon-name">privacidade</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                </div>
+                <div class="icon-name">info</div>
+            </div>
+            <div class="icon-item">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="3 15 9 9 13 13 22 4" />
+                        <polyline points="17 4 22 4 22 9" />
+                    </svg>
+                </div>
+                <div class="icon-name">histórico</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOM DE VOZ -->
+    <section class="section" id="voz">
+        <div class="section-label">07 — Comunicação</div>
+        <h2 class="section-title">Tom de voz</h2>
+        <p class="section-desc">A LUMI fala com calma, clareza e cuidado. É uma voz de confiança — como a de um familiar
+            responsável. Nunca alarmista, nunca fria. Direta mas gentil.</p>
+
+        <div class="voice-grid">
+            <div class="voice-card do">
+                <div class="voice-card-label">✓ Use</div>
+                <p>"Sofia está em área segura."</p>
+            </div>
+            <div class="voice-card dont">
+                <div class="voice-card-label">✕ Evite</div>
+                <p>"ALERTA: criança fora do perímetro definido pelo usuário."</p>
+            </div>
+            <div class="voice-card do">
+                <div class="voice-card-label">✓ Use</div>
+                <p>"Bateria baixa. Lembre de carregar a pulseira hoje."</p>
+            </div>
+            <div class="voice-card dont">
+                <div class="voice-card-label">✕ Evite</div>
+                <p>"Nível de energia do dispositivo crítico. Risco de desconexão."</p>
+            </div>
+            <div class="voice-card do">
+                <div class="voice-card-label">✓ Use</div>
+                <p>"João acionou o SOS. Ele pode precisar de você."</p>
+            </div>
+            <div class="voice-card dont">
+                <div class="voice-card-label">✕ Evite</div>
+                <p>"Botão de emergência pressionado. Contato imediato necessário."</p>
+            </div>
+            <div class="voice-card do">
+                <div class="voice-card-label">✓ Use</div>
+                <p>"Área segura criada. A família será avisada se Sofia sair daqui."</p>
+            </div>
+            <div class="voice-card dont">
+                <div class="voice-card-label">✕ Evite</div>
+                <p>"Geofence configurado com sucesso. Notificações ativadas para saída de perímetro."</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 32px;">
+            <div class="component-group-label">Princípios de comunicação</div>
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:8px;">Humanizado</div>
+                    <div class="card-body">Usa o nome da criança. Não fala de "usuário" ou "dispositivo".</div>
+                </div>
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:8px;">Calmo</div>
+                    <div class="card-body">Mesmo em emergências, a mensagem é clara — nunca em pânico.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:8px;">Direto</div>
+                    <div class="card-body">Uma frase por notificação. O responsável entende em segundos.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:8px;">Acessível</div>
+                    <div class="card-body">Sem jargão técnico. Qualquer responsável entende sem manual.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- APP MOCKUP -->
+    <section class="section" id="app">
+        <div class="section-label">08 — Interface</div>
+        <h2 class="section-title">Mockup do aplicativo</h2>
+        <p class="section-desc">Prévia da interface do aplicativo LUMI para responsáveis. Design minimalista,
+            informações essenciais em destaque, botão SOS de fácil acesso.</p>
+
+        <div
+            style="display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; align-items: flex-start; margin-top: 40px;">
+            <div class="mockup-phone">
+                <div class="phone-status">
+                    <span class="phone-time">09:24</span>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <span style="font-size:10px;color:rgba(255,255,255,0.7);">●●●</span>
+                        <span style="font-size:10px;color:rgba(255,255,255,0.7);">84%</span>
+                    </div>
+                </div>
+                <div class="phone-screen">
+                    <div class="phone-header">
+                        <div>
+                            <div class="phone-header-title">LUMI</div>
+                            <div style="font-size:11px;color:rgba(255,255,255,0.7);">Sofia · 3 km de distância</div>
+                        </div>
+                        <span class="badge badge-success badge-dot" style="font-size:11px;">GPS ativo</span>
+                    </div>
+                    <div class="phone-map-placeholder">
+                        <div
+                            style="position:absolute;inset:0;background:linear-gradient(135deg,#d6eaf8 0%,#AED6F1 50%,#85C1E9 100%);opacity:0.6;">
+                        </div>
+                        <div class="phone-map-pin" style="position:relative;z-index:1;"></div>
+                    </div>
+                    <div class="phone-content">
+                        <div class="phone-stat-row">
+                            <div class="phone-stat">
+                                <div class="phone-stat-label">Bateria</div>
+                                <div class="phone-stat-value">84%</div>
+                            </div>
+                            <div class="phone-stat">
+                                <div class="phone-stat-label">Sinal GPS</div>
+                                <div class="phone-stat-value">Forte</div>
+                            </div>
+                            <div class="phone-stat">
+                                <div class="phone-stat-label">Área</div>
+                                <div class="phone-stat-value" style="color:#27AE60;">Segura</div>
+                            </div>
+                        </div>
+                        <div
+                            style="background:var(--lumi-sky-pale); border-radius:10px; padding:10px; font-size:12px; color:var(--lumi-ink-mid); margin-bottom:10px; border: 1px solid var(--lumi-sky-light);">
+                            📍 Rua das Flores, 248 — atualizado há 2 min
+                        </div>
+                        <button class="phone-sos-btn">🆘 ACIONAR SOS</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="max-width: 320px; padding-top: 20px;">
+                <div class="component-group-label">Hierarquia de informação</div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div
+                            style="width:28px;height:28px;background:var(--lumi-sky-pale);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--lumi-sky-dark);font-weight:600;flex-shrink:0;">
+                            1</div>
+                        <div>
+                            <div style="font-size:14px;font-weight:500;color:var(--lumi-ink);margin-bottom:2px;">
+                                Localização no mapa</div>
+                            <div style="font-size:13px;color:var(--lumi-ink-light);">Primeiro elemento visível —
+                                responde à pergunta "onde está?"</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div
+                            style="width:28px;height:28px;background:var(--lumi-sky-pale);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--lumi-sky-dark);font-weight:600;flex-shrink:0;">
+                            2</div>
+                        <div>
+                            <div style="font-size:14px;font-weight:500;color:var(--lumi-ink);margin-bottom:2px;">Status
+                                da pulseira</div>
+                            <div style="font-size:13px;color:var(--lumi-ink-light);">Bateria, GPS e área — visíveis de
+                                um relance.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div
+                            style="width:28px;height:28px;background:var(--lumi-sky-pale);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--lumi-sky-dark);font-weight:600;flex-shrink:0;">
+                            3</div>
+                        <div>
+                            <div style="font-size:14px;font-weight:500;color:var(--lumi-ink);margin-bottom:2px;">Último
+                                endereço</div>
+                            <div style="font-size:13px;color:var(--lumi-ink-light);">Endereço legível com tempo de
+                                atualização.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div
+                            style="width:28px;height:28px;background:#FDEDEC;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#C0392B;font-weight:600;flex-shrink:0;">
+                            !</div>
+                        <div>
+                            <div style="font-size:14px;font-weight:500;color:var(--lumi-ink);margin-bottom:2px;">Botão
+                                SOS</div>
+                            <div style="font-size:13px;color:var(--lumi-ink-light);">Sempre visível, na parte inferior —
+                                acionável com um toque.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="doc-footer">
+        <div>
+            <strong>LUMI</strong> — Sistema de Design v1.0<br>
+            Engenharia da Computação · UNIFAN · Feira de Santana, 2026
+        </div>
+        <div style="text-align:right;">
+            Orientadora: Ivonete Maciel<br>
+            "Segurança sem distração."
+        </div>
+    </footer>
+
+</body>
+
+</html>

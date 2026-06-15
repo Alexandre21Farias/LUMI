@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Users, AlertCircle, Watch, HeartPulse, Plus, Pencil, Trash2 } from "lucide-react"
+import { Users, AlertCircle, HeartPulse, Plus, Pencil, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase"
 
@@ -49,7 +49,10 @@ export default function CriancasPage() {
   }
 
   useEffect(() => {
-    fetchChildren()
+    const timer = setTimeout(() => {
+      fetchChildren()
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   const resetForm = () => {
@@ -211,6 +214,7 @@ export default function CriancasPage() {
                 <CardContent className="pt-0 relative">
                   <div className="flex flex-col items-center gap-2 -mt-12 mb-4">
                     <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-white z-10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={child.photo_url} alt={child.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="text-center w-full">

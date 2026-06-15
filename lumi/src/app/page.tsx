@@ -31,25 +31,25 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-blue-50 to-white">
+        <section className="w-full py-20 md:py-32 lg:py-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/50 via-slate-50 to-white">
           <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center space-y-8 text-center">
-              <div className="space-y-4 max-w-3xl">
-                <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-slate-900">
-                  Segurança <span className="text-blue-500">sem distração.</span>
+            <div className="flex flex-col items-center space-y-10 text-center">
+              <div className="space-y-6 max-w-4xl">
+                <h1 className="text-4xl font-black tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-none">
+                  Segurança <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-indigo-700">sem distração.</span>
                 </h1>
-                <p className="mx-auto max-w-[700px] text-slate-600 md:text-xl leading-relaxed">
-                  Monitore crianças em tempo real sem expô-las a telas, redes sociais ou dispositivos complexos.
+                <p className="mx-auto max-w-[750px] text-slate-600 md:text-xl leading-relaxed">
+                  Monitore crianças em tempo real sem expô-las a telas, redes sociais ou distrações de dispositivos inteligentes complexos.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Link href="#como-funciona" className="w-full sm:w-auto">
-                  <Button variant="outline" className="w-full rounded-full border-blue-200 text-blue-600 hover:bg-blue-50 px-8 py-6 text-lg">
+                  <Button variant="outline" className="w-full rounded-full border-blue-200 text-blue-600 hover:bg-blue-50/50 px-8 py-6 text-lg font-semibold transition-all">
                     Conhecer Solução
                   </Button>
                 </Link>
                 <Link href="/login" className="w-full sm:w-auto">
-                  <Button className="w-full rounded-full bg-blue-500 hover:bg-blue-600 px-8 py-6 text-lg shadow-lg shadow-blue-200">
+                  <Button className="w-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8 py-6 text-lg font-semibold shadow-xl shadow-blue-500/20 hover:shadow-indigo-500/30 transition-all">
                     Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -57,13 +57,17 @@ export default function LandingPage() {
               
               {/* Imagem ilustrativa / Mockup */}
               <div className="mt-16 w-full max-w-4xl mx-auto relative group">
-                <div className="absolute inset-0 bg-blue-400 rounded-3xl blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div className="relative bg-white rounded-3xl border border-blue-100 shadow-2xl p-4 flex flex-col md:flex-row items-center overflow-hidden h-64 md:h-96">
-                   <div className="flex-1 flex justify-center items-center h-full w-full bg-blue-50 rounded-2xl relative">
-                     <div className="w-48 h-12 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold tracking-widest shadow-inner relative z-10">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-1000"></div>
+                <div className="relative bg-white/70 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl p-6 flex flex-col md:flex-row items-center overflow-hidden h-64 md:h-96">
+                   <div className="flex-1 flex justify-center items-center h-full w-full bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl relative border border-blue-100/30">
+                     <div className="absolute inset-0 bg-grid-slate-900/[0.02] [mask-image:linear-gradient(0deg,transparent,black)]"></div>
+                     <div className="w-56 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold tracking-widest shadow-xl shadow-blue-500/20 relative z-10 transition-transform group-hover:scale-105 duration-500">
                         PULSEIRA LUMI
                      </div>
-                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                     <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-600 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-500/20 flex items-center gap-1.5 animate-pulse">
+                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                       Sinal de GPS Ativo
+                     </div>
                    </div>
                 </div>
               </div>
@@ -72,43 +76,43 @@ export default function LandingPage() {
         </section>
 
         {/* Como Funciona Section */}
-        <section id="como-funciona" className="w-full py-20 bg-white">
+        <section id="como-funciona" className="w-full py-24 bg-white relative">
           <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-slate-900">Como Funciona</h2>
-              <p className="max-w-[900px] text-slate-600 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Quatro passos simples para garantir a segurança de quem você mais ama.
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-16">
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-5xl text-slate-900">Como Funciona</h2>
+              <p className="max-w-[700px] text-slate-500 md:text-xl leading-relaxed">
+                Quatro passos simples e intuitivos para garantir a total segurança de quem você mais ama.
               </p>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-4 lg:gap-10">
+            <div className="mx-auto grid max-w-6xl items-stretch gap-6 md:grid-cols-4 lg:gap-8">
               {[
                 {
-                  icon: <Activity className="h-10 w-10 mb-4 text-blue-500" />,
-                  title: "Passo 1",
-                  description: "A criança utiliza a pulseira LUMI.",
+                  icon: <Activity className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors duration-300" />,
+                  title: "1. Vestibilidade",
+                  description: "A criança utiliza a pulseira LUMI no dia a dia de forma leve e prática.",
                 },
                 {
-                  icon: <MapPin className="h-10 w-10 mb-4 text-blue-500" />,
-                  title: "Passo 2",
-                  description: "A pulseira transmite sua localização continuamente.",
+                  icon: <MapPin className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors duration-300" />,
+                  title: "2. Transmissão",
+                  description: "O dispositivo envia coordenadas de geolocalização em tempo real.",
                 },
                 {
-                  icon: <Shield className="h-10 w-10 mb-4 text-blue-500" />,
-                  title: "Passo 3",
-                  description: "Os responsáveis acompanham tudo em tempo real pelo app.",
+                  icon: <Shield className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors duration-300" />,
+                  title: "3. Monitoramento",
+                  description: "Os responsáveis acessam as informações de qualquer lugar via painel web.",
                 },
                 {
-                  icon: <Bell className="h-10 w-10 mb-4 text-red-500" />,
-                  title: "Passo 4",
-                  description: "Alertas são emitidos em situações de risco ou saída da área segura.",
+                  icon: <Bell className="h-8 w-8 text-red-500 group-hover:text-white transition-colors duration-300" />,
+                  title: "4. Alertas SOS",
+                  description: "Notificações instantâneas são enviadas se a criança sair da área de segurança.",
                 },
               ].map((step, index) => (
-                <div key={index} className="flex flex-col items-center text-center p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-lg transition-all hover:-translate-y-1">
-                  <div className="p-4 bg-white rounded-full shadow-sm mb-4">
+                <div key={index} className="flex flex-col items-center text-center p-8 bg-slate-50/50 hover:bg-white rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer">
+                  <div className="p-4 bg-white rounded-2xl shadow-sm mb-6 group-hover:bg-blue-600 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all duration-300">
                     {step.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">{step.title}</h3>
-                  <p className="text-slate-600 mt-2">{step.description}</p>
+                  <h3 className="text-lg font-bold text-slate-900">{step.title}</h3>
+                  <p className="text-slate-500 mt-2 text-sm leading-relaxed">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -116,53 +120,57 @@ export default function LandingPage() {
         </section>
 
         {/* Diferenciais Section */}
-        <section id="diferenciais" className="w-full py-20 bg-slate-50">
+        <section id="diferenciais" className="w-full py-24 bg-slate-50/50 border-y border-slate-100">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-slate-900">Diferenciais</h2>
-              <p className="max-w-[700px] text-slate-600 md:text-xl/relaxed">
-                Por que a LUMI é a melhor escolha em comparação a um smartwatch comum?
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-5xl text-slate-900">Diferenciais</h2>
+              <p className="max-w-[700px] text-slate-500 md:text-xl">
+                Entenda por que a LUMI é a melhor e mais segura opção em comparação a smartwatches comuns.
               </p>
             </div>
             
-            <div className="mx-auto max-w-4xl grid md:grid-cols-2 gap-8">
+            <div className="mx-auto max-w-4xl grid md:grid-cols-2 gap-8 items-stretch">
               {/* Concorrente */}
-              <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
-                <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center justify-center">
-                  Smartwatch Infantil
-                </h3>
-                <ul className="space-y-4">
-                  {['Jogos', 'Redes sociais', 'Chamadas', 'Câmera', 'Apps diversos'].map((item, i) => (
-                    <li key={i} className="flex items-center text-slate-600">
-                      <XCircle className="h-6 w-6 mr-3 text-red-500" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-6 text-center">
+                    Smartwatch Comum
+                  </h3>
+                  <ul className="space-y-4">
+                    {['Jogos viciantes', 'Acesso a redes sociais', 'Distrações em sala de aula', 'Câmeras invasivas', 'Bateria de baixa duração'].map((item, i) => (
+                      <li key={i} className="flex items-center text-slate-600 text-sm">
+                        <XCircle className="h-5 w-5 mr-3 text-red-500 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
 
               {/* LUMI */}
-              <div className="bg-blue-500 rounded-3xl p-8 shadow-xl border border-blue-400 relative overflow-hidden transform md:scale-105">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-2xl border border-blue-500 relative overflow-hidden transform md:scale-105 flex flex-col justify-between text-white">
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
-                <h3 className="text-2xl font-bold text-white mb-6 flex items-center justify-center">
-                  Pulseira LUMI
-                </h3>
-                <ul className="space-y-4 relative z-10">
-                  {['Sem jogos', 'Sem redes sociais', 'Sem chamadas', 'Sem câmera', 'Foco exclusivo em segurança'].map((item, i) => (
-                    <li key={i} className="flex items-center text-blue-50 font-medium">
-                      <CheckCircle2 className="h-6 w-6 mr-3 text-blue-200" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div>
+                  <h3 className="text-2xl font-bold mb-6 text-center">
+                    Pulseira LUMI
+                  </h3>
+                  <ul className="space-y-4">
+                    {['Sem jogos ou distrações', 'Foco 100% na segurança infantil', 'Sem acesso a redes sociais', 'Proteção e privacidade garantidas', 'Longa durabilidade de bateria'].map((item, i) => (
+                      <li key={i} className="flex items-center text-blue-50 font-semibold text-sm">
+                        <CheckCircle2 className="h-5 w-5 mr-3 text-blue-200 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
                 
-                <div className="mt-8 pt-6 border-t border-blue-400/50">
-                  <p className="text-white font-semibold mb-4 text-center">Recursos essenciais mantidos:</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-blue-100">
-                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Rastreamento</div>
-                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Botão SOS</div>
-                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Área Segura</div>
-                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Monitoramento</div>
+                <div className="mt-8 pt-6 border-t border-white/10">
+                  <p className="text-white text-xs font-bold uppercase tracking-wider mb-4 text-center">Recursos Essenciais Integrados:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-blue-100">
+                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Rastreamento Real</div>
+                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Botão Físico SOS</div>
+                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Perímetro Seguro</div>
+                    <div className="flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" /> Monitoramento 24h</div>
                   </div>
                 </div>
               </div>

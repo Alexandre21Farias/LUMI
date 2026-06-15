@@ -2,18 +2,41 @@
 
 import { useState } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Bell, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function SOSPage() {
   const [sosStatus, setSosStatus] = useState<"idle" | "active" | "resolved">("idle")
+  const [isTriggering, setIsTriggering] = useState(false)
 
-  const triggerSOS = () => {
+  const triggerSOS = async () => {
+    setIsTriggering(true)
+    
+    // Buscar primeira pulseira ativa para mockar quem enviou
+    const { data: bData } = await supabase
+      .from('bracelets')
+      .select('id')
+      .eq('is_connected', true)
+      .limit(1)
+      .single()
+
+    if (bData) {
+      await supabase.from('event_history').insert([{
+        bracelet_id: bData.id,
+        event_type: 'SOS',
+        description: 'O botão de emergência foi acionado. Responsável notificado.'
+      }])
+    }
+    
     setSosStatus("active")
+    setIsTriggering(false)
   }
 
-  const resolveSOS = () => {
+  const resolveSOS = async () => {
+    // Poderiamos registrar a resolução no banco, mas como é só um protótipo,
+    // o foco maior foi criar o evento inicial para aparecer no Histórico.
     setSosStatus("resolved")
     setTimeout(() => setSosStatus("idle"), 3000)
   }
@@ -39,10 +62,11 @@ export default function SOSPage() {
             {sosStatus === "idle" && (
               <button 
                 onClick={triggerSOS}
-                className="w-48 h-48 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full shadow-xl shadow-red-500/30 flex flex-col items-center justify-center transition-transform hover:scale-105 active:scale-95"
+                disabled={isTriggering}
+                className={`w-48 h-48 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full shadow-xl shadow-red-500/30 flex flex-col items-center justify-center transition-transform ${!isTriggering && 'hover:scale-105 active:scale-95'} disabled:opacity-70`}
               >
                 <AlertTriangle className="h-16 w-16 mb-2" />
-                <span className="text-2xl font-bold tracking-widest">S O S</span>
+                <span className="text-2xl font-bold tracking-widest">{isTriggering ? '...' : 'S O S'}</span>
               </button>
             )}
 

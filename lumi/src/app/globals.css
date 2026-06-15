@@ -23,6 +23,23 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  /* LUMI Design System Tokens */
+  --color-lumi-sky: #AED6F1;
+  --color-lumi-sky-light: #D6EAF8;
+  --color-lumi-sky-pale: #EBF5FB;
+  --color-lumi-sky-deep: #5DADE2;
+  --color-lumi-sky-dark: #1A5276;
+  --color-lumi-white: #FFFFFF;
+  --color-lumi-off-white: #F7FBFE;
+  --color-lumi-ink: #0D2137;
+  --color-lumi-ink-mid: #2C5F7A;
+  --color-lumi-ink-light: #5B8FA8;
+  --color-lumi-accent: #3AAFCB;
+  --color-lumi-accent-pale: #E0F4F8;
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-sora);
 }
 
 @layer base {

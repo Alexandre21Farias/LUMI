@@ -4,7 +4,6 @@ import dynamic from "next/dynamic"
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { ShieldAlert, Save, MapPin } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useGeolocation } from "@/hooks/useGeolocation"
 import { Button } from "@/components/ui/button"
@@ -31,7 +30,7 @@ export default function AreaSeguraPage() {
   useEffect(() => {
     const fetchSafeArea = async () => {
       setLoading(true)
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('safe_areas')
         .select('*')
         .eq('user_id', adminId)
@@ -41,21 +40,9 @@ export default function AreaSeguraPage() {
       if (data) {
         setSafeAreaId(data.id)
         setName(data.name)
-        // Extract lat/lng from POINT(lng lat) string or fallback
-        // Since we know the seed format or we can just parse it
-        // Note: PostGIS POINT is usually POINT(lng lat)
-        // But for simplicity if we can't parse, we use the default
-        try {
-          if (typeof data.center_point === 'string') {
-            const match = data.center_point.match(/POINT\(([-.\d]+)\s+([-.\d]+)\)/)
-            if (match) {
-              setCenterLng(parseFloat(match[1]))
-              setCenterLat(parseFloat(match[2]))
-            }
-          }
-        } catch(e) {}
-        
-        setRadius(data.radius_meters)
+        setCenterLat(data.lat)
+        setCenterLng(data.lng)
+        setRadius(data.radius)
       }
       setLoading(false)
     }
@@ -75,17 +62,15 @@ export default function AreaSeguraPage() {
   const handleSave = async () => {
     setIsSaving(true)
     
-    // In PostGIS, we save as POINT(longitude latitude)
-    const pointStr = `POINT(${centerLng} ${centerLat})`
-
     if (safeAreaId) {
       // Update
       const { error } = await supabase
         .from('safe_areas')
         .update({
           name,
-          radius_meters: radius,
-          center_point: pointStr
+          radius: radius,
+          lat: centerLat,
+          lng: centerLng
         })
         .eq('id', safeAreaId)
 
@@ -96,10 +81,10 @@ export default function AreaSeguraPage() {
       const { error } = await supabase
         .from('safe_areas')
         .insert([{
-          user_id: adminId,
           name,
-          radius_meters: radius,
-          center_point: pointStr
+          radius: radius,
+          lat: centerLat,
+          lng: centerLng
         }])
 
       if (error) alert("Erro ao criar: " + error.message)

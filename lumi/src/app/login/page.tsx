@@ -30,7 +30,7 @@ export default function LoginPage() {
         setError("Credenciais inválidas. Use admin@lumi.com")
         setLoading(false)
       }
-    } catch (err) {
+    } catch {
       setError("Erro ao fazer login")
       setLoading(false)
     }

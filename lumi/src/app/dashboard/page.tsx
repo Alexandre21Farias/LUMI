@@ -1,156 +1,182 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, Watch, Map, History, Activity, MapPin } from "lucide-react"
-import Link from "next/link"
+import { Users, Watch, ShieldAlert, History, Activity, Navigation, CheckCircle } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+
+interface RecentEvent {
+  id: string
+  event_type: string
+  description: string
+  created_at: string
+}
 
 export default function DashboardPage() {
+  const [childrenCount, setChildrenCount] = useState(0)
+  const [activeBraceletsCount, setActiveBraceletsCount] = useState(0)
+  const [safeAreaName, setSafeAreaName] = useState("Nenhuma")
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const adminId = '11111111-1111-1111-1111-111111111111'
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true)
+
+      // 1. Total de Crianças
+      const { count: cCount } = await supabase
+        .from('children')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', adminId)
+      setChildrenCount(cCount || 0)
+
+      // 2. Pulseiras Ativas (is_connected = true)
+      // First we need to get bracelets linked to this user's children
+      // For simplicity in the prototype, we just count all connected bracelets if we only have one user
+      const { count: bCount } = await supabase
+        .from('bracelets')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_connected', true)
+      setActiveBraceletsCount(bCount || 0)
+
+      // 3. Área Segura
+      const { data: safeArea } = await supabase
+        .from('safe_areas')
+        .select('name')
+        .eq('user_id', adminId)
+        .limit(1)
+        .single()
+      if (safeArea) {
+        setSafeAreaName(safeArea.name)
+      }
+
+      // 4. Últimos Eventos
+      const { data: events } = await supabase
+        .from('event_history')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3)
+      setRecentEvents(events || [])
+
+      setLoading(false)
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  // Mapeamento de ícones para eventos
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'SOS': return <ShieldAlert className="h-5 w-5 text-red-600" />
+      case 'SAFE_AREA_EXIT': return <Navigation className="h-5 w-5 text-purple-600" />
+      case 'SAFE_AREA_ENTER': return <CheckCircle className="h-5 w-5 text-emerald-600" />
+      case 'BATTERY_LOW': return <Activity className="h-5 w-5 text-orange-600" />
+      default: return <History className="h-5 w-5 text-slate-600" />
+    }
+  }
+
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight text-slate-800">Visão Geral</h2>
         </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {/* Card: Crianças Monitoradas */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Crianças Monitoradas</CardTitle>
-              <Users className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800">2</div>
-              <p className="text-xs text-slate-500 mt-1">
-                João Silva, Maria Souza
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Card: Pulseiras Ativas */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Pulseiras Ativas</CardTitle>
-              <Watch className="h-4 w-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800">1</div>
-              <p className="text-xs text-emerald-500 mt-1 flex items-center">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>
-                LUMI-001 (87%)
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Card: Área Segura */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Área Segura Ativa</CardTitle>
-              <Map className="h-4 w-4 text-indigo-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800">UNIFAN</div>
-              <p className="text-xs text-indigo-500 mt-1">
-                Raio de 300 metros
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Card: Último Evento */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Último Evento</CardTitle>
-              <History className="h-4 w-4 text-orange-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800">Localização Atualizada</div>
-              <p className="text-xs text-slate-500 mt-1">Agora mesmo</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Localização Atual Mapa Resumo */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="col-span-4 shadow-sm border-0 overflow-hidden">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-blue-500" />
-                Rastreamento em Tempo Real
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="h-[350px] w-full bg-slate-100 relative group cursor-pointer">
-                {/* Imagem estática do mapa para o dashboard com overlay para ir para o mapa real */}
-                <div className="absolute inset-0 bg-[url('https://maps.wikimedia.org/osm-intl/14/6265/8615.png')] bg-cover bg-center opacity-70"></div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm bg-white/30 group-hover:bg-white/10 transition-all">
-                  <div className="bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 transform group-hover:scale-105 transition-transform">
-                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                       <MapPin className="h-6 w-6 text-blue-600" />
-                     </div>
-                     <div>
-                       <p className="font-bold text-slate-900">UNIFAN</p>
-                       <p className="text-sm text-slate-500">Feira de Santana, BA</p>
-                     </div>
+        
+        {loading ? (
+          <div className="text-center py-12 text-slate-500">Carregando painel...</div>
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500">Crianças Monitoradas</CardTitle>
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <Users className="h-4 w-4" />
                   </div>
-                  <Link href="/rastreamento" className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full shadow-lg transition-colors">
-                    Abrir Mapa Interativo
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Atividades Recentes */}
-          <Card className="col-span-3 shadow-sm border-0">
-            <CardHeader className="border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-emerald-500" />
-                Eventos Recentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-6">
-                <div className="flex relative">
-                  <div className="absolute left-[7px] top-6 bottom-[-24px] w-0.5 bg-slate-100"></div>
-                  <div className="w-4 h-4 rounded-full bg-emerald-500 mt-1 z-10 border-2 border-white shadow-sm ring-2 ring-emerald-50"></div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-bold text-slate-800">Entrada em área segura: UNIFAN</p>
-                    <p className="text-xs text-slate-500">Agora mesmo</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-slate-900">{childrenCount}</div>
+                  <p className="text-xs text-slate-500 mt-1">Registradas na plataforma</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500">Pulseiras Ativas</CardTitle>
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <Watch className="h-4 w-4" />
                   </div>
-                </div>
-                <div className="flex relative">
-                  <div className="absolute left-[7px] top-6 bottom-[-24px] w-0.5 bg-slate-100"></div>
-                  <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 z-10 border-2 border-white shadow-sm ring-2 ring-blue-50"></div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-bold text-slate-800">Localização atualizada (Mercantil)</p>
-                    <p className="text-xs text-slate-500">Há 20 minutos</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-slate-900">{activeBraceletsCount}</div>
+                  <p className="text-xs text-slate-500 mt-1">Conectadas via GPS</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500">Área Segura Ativa</CardTitle>
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <ShieldAlert className="h-4 w-4" />
                   </div>
-                </div>
-                <div className="flex relative">
-                  <div className="absolute left-[7px] top-6 bottom-[-24px] w-0.5 bg-slate-100"></div>
-                  <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 z-10 border-2 border-white shadow-sm ring-2 ring-blue-50"></div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-bold text-slate-800">Localização atualizada (Bio Hit)</p>
-                    <p className="text-xs text-slate-500">Há 40 minutos</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-slate-900 truncate" title={safeAreaName}>{safeAreaName}</div>
+                  <p className="text-xs text-slate-500 mt-1">Perímetro configurado</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500">Bateria Média</CardTitle>
+                  <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                    <Activity className="h-4 w-4" />
                   </div>
-                </div>
-                <div className="flex relative">
-                  <div className="w-4 h-4 rounded-full bg-slate-400 mt-1 z-10 border-2 border-white shadow-sm"></div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-bold text-slate-800">GPS conectado</p>
-                    <p className="text-xs text-slate-500">Há 1 hora e 30 min</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-slate-900">87%</div>
+                  <p className="text-xs text-slate-500 mt-1">Bom estado</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="border-0 shadow-sm bg-white col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-slate-800">Status Recente</CardTitle>
+                  <CardDescription>Últimas atualizações das pulseiras</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {recentEvents.length === 0 ? (
+                       <p className="text-sm text-slate-500">Nenhum evento registrado.</p>
+                    ) : (
+                      recentEvents.map((event) => (
+                        <div key={event.id} className="flex items-center">
+                          <div className={`p-2 rounded-full mr-4 bg-slate-50`}>
+                            {getEventIcon(event.event_type)}
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium text-slate-900 leading-none">{event.description}</p>
+                            <p className="text-xs text-slate-500">Hoje, {formatTime(event.created_at)}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                </div>
-              </div>
-              <div className="mt-6 text-center">
-                <Link href="/historico" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                  Ver histórico completo &rarr;
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   )

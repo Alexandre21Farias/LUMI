@@ -1,35 +1,112 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Navigation, ShieldAlert, CheckCircle2 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
-// Importar dinamicamente para evitar erro de 'window is not defined' do Leaflet no SSR
 const Map = dynamic(() => import("@/components/Map"), { ssr: false })
+
+interface RoutePoint {
+  lat: number
+  lng: number
+  time: string
+  label: string
+}
+
+interface SafeAreaInfo {
+  lat: number
+  lng: number
+  radius: number
+  name: string
+}
+
+interface BraceletInfo {
+  id: string
+  code: string
+  is_connected: boolean
+  children?: {
+    name: string
+    photo_url: string
+  }
+}
 
 export default function RastreamentoPage() {
   const [positionIndex, setPositionIndex] = useState(0)
-  
-  // Rota simulada: Bio Hit -> Mercantil -> UNIFAN
-  const route = useMemo(() => [
-    { lat: -12.2510, lng: -38.9540, label: 'Bio Hit Vila Mariana', time: '08:00' },
-    { lat: -12.2515, lng: -38.9547, label: 'A caminho...', time: '08:10' },
-    { lat: -12.2520, lng: -38.9555, label: 'Mercantil próximo à UNIFAN', time: '08:20' },
-    { lat: -12.2525, lng: -38.9560, label: 'A caminho...', time: '08:30' },
-    { lat: -12.25301, lng: -38.95669, label: 'Centro Universitário Nobre (UNIFAN)', time: '08:40' }
-  ], [])
+  const [route, setRoute] = useState<RoutePoint[]>([])
+  const [safeArea, setSafeArea] = useState<SafeAreaInfo | null>(null)
+  const [braceletInfo, setBraceletInfo] = useState<BraceletInfo | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const currentPosition = route[positionIndex]
-  
-  // UNIFAN location and radius (Safe area)
-  const safeZoneCenter = [-12.25301, -38.95669]
-  const safeZoneRadius = 300 // in meters
-  
-  // Calculate distance in meters between two lat/lng points (Haversine formula approximation)
+  useEffect(() => {
+    const fetchTrackingData = async () => {
+      setLoading(true)
+      
+      // 1. Área Segura
+      const { data: areaData } = await supabase
+        .from('safe_areas')
+        .select('*')
+        .limit(1)
+        .single()
+        
+      if (areaData) {
+        setSafeArea({
+          lat: areaData.lat,
+          lng: areaData.lng,
+          radius: areaData.radius,
+          name: areaData.name
+        })
+      }
+
+      // 2. Pulseira e Criança (vamos pegar a primeira conectada)
+      const { data: bData } = await supabase
+        .from('bracelets')
+        .select('*, children(name, photo_url)')
+        .eq('is_connected', true)
+        .limit(1)
+        .single()
+
+      if (bData) {
+        setBraceletInfo(bData)
+        
+        // 3. Localizações para essa pulseira
+        const { data: lData } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('bracelet_id', bData.id)
+          .order('created_at', { ascending: true })
+          
+        if (lData && lData.length > 0) {
+          setRoute(lData.map(loc => ({
+            lat: loc.lat,
+            lng: loc.lng,
+            time: new Date(loc.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            label: "Localização registrada" // Ideal seria Geocoding reverso, mas mantemos genérico
+          })))
+        }
+      }
+
+      setLoading(false)
+    }
+
+    fetchTrackingData()
+  }, [])
+
+  // Simulação de movimento contínuo pelo histórico de localizações
+  useEffect(() => {
+    if (route.length <= 1) return
+    
+    const interval = setInterval(() => {
+      setPositionIndex((prev) => (prev + 1) % route.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [route.length])
+
+  // Helpers
   const getDistanceFromLatLonInM = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // Radius of the earth in m
+    const R = 6371e3; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -37,30 +114,42 @@ export default function RastreamentoPage() {
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
       Math.sin(dLon/2) * Math.sin(dLon/2); 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    return R * c; // Distance in m
+    return R * c; 
   }
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">Carregando mapa...</div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!route.length || !safeArea) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full flex-col">
+          <ShieldAlert className="w-16 h-16 text-slate-300 mb-4" />
+          <h2 className="text-xl font-bold text-slate-700">Dados insuficientes</h2>
+          <p className="text-slate-500">Verifique se existe uma área segura e locais registrados para a pulseira ativa.</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  const currentPosition = route[positionIndex]
   const distanceToCenter = getDistanceFromLatLonInM(
     currentPosition.lat, 
     currentPosition.lng, 
-    safeZoneCenter[0], 
-    safeZoneCenter[1]
+    safeArea.lat, 
+    safeArea.lng
   )
-  
-  const isInsideSafeZone = distanceToCenter <= safeZoneRadius
-
-  // Simulação de movimento a cada 5 segundos para a próxima coordenada
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPositionIndex((prev) => (prev + 1) % route.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [route.length])
+  const isInsideSafeZone = distanceToCenter <= safeArea.radius
 
   return (
     <DashboardLayout>
       <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <h2 className="text-3xl font-bold tracking-tight text-slate-800 flex items-center">
             <MapPin className="mr-2 h-8 w-8 text-blue-500" />
             Rastreamento em Tempo Real
@@ -76,8 +165,8 @@ export default function RastreamentoPage() {
           <Map 
             position={[currentPosition.lat, currentPosition.lng]} 
             isSafeZone={true} 
-            safeZoneCenter={safeZoneCenter} 
-            safeZoneRadius={safeZoneRadius} 
+            safeZoneCenter={[safeArea.lat, safeArea.lng]} 
+            safeZoneRadius={safeArea.radius} 
           />
           
           <Card className="absolute top-4 right-4 z-[400] w-64 shadow-lg border-0 bg-white/95 backdrop-blur">
@@ -98,12 +187,12 @@ export default function RastreamentoPage() {
                   <span className="font-mono">{currentPosition.lng.toFixed(5)}</span>
                 </div>
                 <div className="flex justify-between border-t mt-2 pt-2">
-                  <span className="text-slate-500">Horário simulado:</span>
+                  <span className="text-slate-500">Horário do registro:</span>
                   <span className="font-bold text-slate-800">{currentPosition.time}</span>
                 </div>
                 <div className="flex justify-between pt-1 border-t mt-1">
-                  <span className="text-slate-500">Atualizado:</span>
-                  <span className="font-medium text-emerald-600">Agora</span>
+                  <span className="text-slate-500">Pulseira:</span>
+                  <span className="font-medium text-slate-700">{braceletInfo?.code}</span>
                 </div>
               </div>
             </CardContent>
@@ -112,10 +201,11 @@ export default function RastreamentoPage() {
           <Card className="absolute bottom-4 left-4 z-[400] max-w-sm shadow-lg border-0 bg-white/95 backdrop-blur">
              <CardContent className="p-4 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500">
-                   <img src="https://ui-avatars.com/api/?name=Joao+Silva&background=2563eb&color=fff" alt="João Silva" className="w-full h-full object-cover" />
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src={braceletInfo?.children?.photo_url || "https://ui-avatars.com/api/?name=User&background=2563eb&color=fff"} alt={braceletInfo?.children?.name || 'Criança'} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                   <h3 className="font-bold text-slate-900">João Silva</h3>
+                   <h3 className="font-bold text-slate-900">{braceletInfo?.children?.name || 'Criança não vinculada'}</h3>
                    <p className="text-sm text-slate-500">Última localização: <span className="text-slate-800 font-medium">{currentPosition.label}</span></p>
                 </div>
              </CardContent>
