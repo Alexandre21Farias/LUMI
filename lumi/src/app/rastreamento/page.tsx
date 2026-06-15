@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navigation, ShieldAlert } from "lucide-react"
-import { dbService } from "@/lib/db"
+import { dbService, SafeArea } from "@/lib/db"
 import { useGeolocation } from "@/hooks/useGeolocation"
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false })
@@ -37,6 +37,7 @@ interface BraceletInfo {
 export default function RastreamentoPage() {
   const { latitude, longitude } = useGeolocation()
   const [route, setRoute] = useState<RoutePoint[]>([])
+  const [safeAreasList, setSafeAreasList] = useState<SafeArea[]>([])
   const [safeArea, setSafeArea] = useState<SafeAreaInfo | null>(null)
   const [braceletInfo, setBraceletInfo] = useState<BraceletInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,8 +56,9 @@ export default function RastreamentoPage() {
     if (showLoading) setLoading(true)
     
     try {
-      // 1. Área Segura
+      // 1. Áreas Seguras
       const safeAreas = await dbService.getSafeAreas()
+      setSafeAreasList(safeAreas)
       if (safeAreas.length > 0) {
         setSafeArea({
           lat: safeAreas[0].lat,
@@ -167,13 +169,10 @@ export default function RastreamentoPage() {
 
   // Sem loop: a posição atual mostrada é sempre o último ponto registrado
   const currentPosition = route[route.length - 1]
-  const distanceToCenter = getDistanceFromLatLonInM(
-    currentPosition.lat, 
-    currentPosition.lng, 
-    safeArea.lat, 
-    safeArea.lng
-  )
-  const isInsideSafeZone = distanceToCenter <= safeArea.radius
+  const isInsideSafeZone = safeAreasList.some(area => {
+    const dist = getDistanceFromLatLonInM(currentPosition.lat, currentPosition.lng, area.lat, area.lng)
+    return dist <= area.radius
+  })
 
   return (
     <DashboardLayout>
@@ -193,9 +192,9 @@ export default function RastreamentoPage() {
         <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border overflow-hidden relative">
           <Map 
             position={[currentPosition.lat, currentPosition.lng]} 
-            isSafeZone={true} 
-            safeZoneCenter={[safeArea.lat, safeArea.lng]} 
-            safeZoneRadius={safeArea.radius} 
+            safeAreas={safeAreasList} 
+            route={route}
+            childName={braceletInfo?.children?.name}
           />
           
           <Card className="absolute top-4 right-4 z-[400] w-64 shadow-lg border-0 bg-white/95 backdrop-blur">

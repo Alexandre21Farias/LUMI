@@ -27,13 +27,13 @@ export default function AreaSeguraPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const fetchSafeAreas = useCallback(async () => {
+  const fetchSafeAreas = useCallback(async (isFirstLoad = false) => {
     await Promise.resolve()
-    setLoading(true)
+    if (isFirstLoad) setLoading(true)
     try {
       const data = await dbService.getSafeAreas()
       setSafeAreas(data)
-      if (data.length > 0 && !selectedAreaId) {
+      if (isFirstLoad && data.length > 0) {
         setSelectedAreaId(data[0].id)
         setName(data[0].name)
         setCenterLat(data[0].lat)
@@ -43,12 +43,12 @@ export default function AreaSeguraPage() {
     } catch (error) {
       console.error("Erro ao buscar áreas seguras:", error)
     }
-    setLoading(false)
-  }, [selectedAreaId])
+    if (isFirstLoad) setLoading(false)
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchSafeAreas()
+      fetchSafeAreas(true)
     }, 0)
     return () => clearTimeout(timer)
   }, [fetchSafeAreas])
@@ -267,9 +267,8 @@ export default function AreaSeguraPage() {
           <div className="md:col-span-3 rounded-2xl shadow-md border-4 border-indigo-100 overflow-hidden relative">
              <Map 
                position={[centerLat, centerLng]} 
-               isSafeZone={true} 
-               safeZoneCenter={[centerLat, centerLng]} 
-               safeZoneRadius={radius} 
+               safeAreas={safeAreas}
+               route={[]}
              />
              <div className="absolute bottom-6 left-6 z-[500] px-4 py-2 rounded-xl bg-white/90 shadow-lg backdrop-blur-sm">
                 <p className="text-sm font-medium text-slate-700">Dica: Selecione uma área na barra lateral para visualizá-la ou editá-la.</p>

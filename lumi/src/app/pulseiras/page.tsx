@@ -110,8 +110,9 @@ export default function PulseirasPage() {
       })
       setIsModalOpen(false)
       fetchBraceletsAndChildren()
-    } catch (error: any) {
-      alert("Erro ao salvar pulseira: " + error.message)
+    } catch (error) {
+      const err = error as Error
+      alert("Erro ao salvar pulseira: " + err.message)
     }
   }
 
@@ -124,8 +125,9 @@ export default function PulseirasPage() {
         } else {
           alert("Erro ao excluir pulseira")
         }
-      } catch (error: any) {
-        alert("Erro ao excluir pulseira: " + error.message)
+      } catch (error) {
+        const err = error as Error
+        alert("Erro ao excluir pulseira: " + err.message)
       }
     }
   }
