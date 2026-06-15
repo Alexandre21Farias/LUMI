@@ -1,21 +1,28 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
-import { Shield, MapPin, Bell, Activity, ArrowRight, CheckCircle2, XCircle } from "lucide-react"
+import { Shield, MapPin, Bell, Activity, ArrowRight, CheckCircle2, XCircle, Menu, X, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="px-6 lg:px-14 h-20 flex items-center bg-white shadow-sm sticky top-0 z-50">
-        <Link className="flex items-center justify-center gap-2" href="/">
+      <header className="px-6 lg:px-14 h-20 flex items-center bg-white shadow-sm sticky top-0 z-50 justify-between">
+        <Link className="flex items-center gap-2" href="/">
           <Shield className="h-8 w-8 text-blue-500" />
           <span className="font-bold text-2xl tracking-tight text-slate-900">LUMI</span>
         </Link>
-        <nav className="ml-auto flex gap-6 sm:gap-8 items-center">
-          <Link className="text-sm font-medium hover:text-blue-600 transition-colors hidden md:block" href="#como-funciona">
+        
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex gap-6 sm:gap-8 items-center">
+          <Link className="text-sm font-medium hover:text-blue-600 transition-colors" href="#como-funciona">
             Como Funciona
           </Link>
-          <Link className="text-sm font-medium hover:text-blue-600 transition-colors hidden md:block" href="#diferenciais">
+          <Link className="text-sm font-medium hover:text-blue-600 transition-colors" href="#diferenciais">
             Diferenciais
           </Link>
           <Link className="text-sm font-medium hover:text-blue-600 transition-colors" href="/sobre">
@@ -27,7 +34,50 @@ export default function LandingPage() {
             </Button>
           </Link>
         </nav>
+
+        {/* Mobile Menu Button */}
+        <button 
+          className="md:hidden p-2 text-slate-600 hover:text-blue-600 focus:outline-none"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle Menu"
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
       </header>
+
+      {/* Mobile Navigation Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-x-0 top-20 bg-white border-b border-slate-200 shadow-lg z-40 animate-in slide-in-from-top duration-200">
+          <nav className="flex flex-col p-6 gap-4">
+            <Link 
+              className="text-base font-medium text-slate-700 hover:text-blue-600 transition-colors py-2 border-b border-slate-100" 
+              href="#como-funciona"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Como Funciona
+            </Link>
+            <Link 
+              className="text-base font-medium text-slate-700 hover:text-blue-600 transition-colors py-2 border-b border-slate-100" 
+              href="#diferenciais"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Diferenciais
+            </Link>
+            <Link 
+              className="text-base font-medium text-slate-700 hover:text-blue-600 transition-colors py-2 border-b border-slate-100" 
+              href="/sobre"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sobre o Projeto
+            </Link>
+            <Link href="/login" className="pt-2" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-6">
+                Acessar Plataforma
+              </Button>
+            </Link>
+          </nav>
+        </div>
+      )}
 
       <main className="flex-1">
         {/* Hero Section */}
@@ -54,6 +104,154 @@ export default function LandingPage() {
                   </Button>
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Smartphone Integration / Access Section */}
+        <section className="w-full py-24 bg-gradient-to-b from-white to-slate-50">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+              
+              {/* Text Content */}
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-semibold animate-pulse">
+                  <Smartphone className="h-4 w-4" /> Otimizado para Celulares
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight sm:text-5xl text-slate-900">
+                  Todo o controle na palma da sua mão
+                </h2>
+                <p className="text-slate-600 text-lg leading-relaxed">
+                  Não é necessário baixar aplicativos pesados nas lojas virtuais. Nossa plataforma web é 100% responsiva e otimizada para smartphones, permitindo que você monitore seu filho de qualquer lugar com facilidade.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600">
+                      <MapPin className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900">Rastreamento Instantâneo</h4>
+                      <p className="text-slate-600 text-sm">Visualize a localização exata no mapa com atualizações contínuas.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl bg-red-500/10 text-red-600">
+                      <Bell className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900">Alertas Inteligentes</h4>
+                      <p className="text-slate-600 text-sm">Receba notificações de emergência de forma instantânea em seu smartphone.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600">
+                      <Shield className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900">Configuração de Perímetros</h4>
+                      <p className="text-slate-600 text-sm">Altere áreas seguras e gerencie números de SOS em poucos toques na tela.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Smartphone Mockup */}
+              <div className="flex justify-center items-center">
+                {/* CSS Phone Frame */}
+                <div className="relative w-[310px] h-[620px] bg-slate-950 rounded-[50px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4)] border-[10px] border-slate-800 ring-1 ring-slate-700/50 overflow-hidden flex flex-col">
+                  {/* Speaker and Camera Notch */}
+                  <div className="absolute top-0 inset-x-0 h-6 bg-slate-800 rounded-b-2xl z-50 flex items-center justify-center">
+                    <div className="w-16 h-1.5 bg-slate-950 rounded-full mb-1"></div>
+                  </div>
+
+                  {/* Status Bar */}
+                  <div className="h-8 pt-6 px-6 bg-white flex justify-between items-center text-[10px] font-bold text-slate-600 z-30 select-none">
+                    <span>18:25</span>
+                    <div className="flex items-center gap-1">
+                      <span>5G</span>
+                      <div className="w-4 h-2.5 border border-slate-600 rounded-sm p-[1px] flex items-center">
+                        <div className="w-full h-full bg-slate-600 rounded-2xs"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Screen Content */}
+                  <div className="flex-1 bg-slate-50 flex flex-col p-4 relative overflow-y-auto pt-2">
+                    {/* Header of mock app */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="p-1 bg-blue-500 rounded-lg text-white">
+                          <Shield className="h-4 w-4" />
+                        </div>
+                        <span className="font-extrabold text-sm text-slate-800 tracking-tight">LUMI</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        Pulseira Online
+                      </span>
+                    </div>
+
+                    {/* Simulated Map */}
+                    <div className="w-full h-44 bg-slate-200 rounded-2xl relative overflow-hidden border border-slate-100 shadow-inner mb-4 flex items-center justify-center">
+                      <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:16px_16px]"></div>
+                      <div className="absolute top-1/2 left-0 w-full h-4 bg-slate-300 transform -translate-y-1/2"></div>
+                      <div className="absolute left-1/3 top-0 w-4 h-full bg-slate-300"></div>
+                      
+                      {/* Safe Zone circle */}
+                      <div className="absolute top-[20%] left-[15%] w-28 h-28 rounded-full border-2 border-blue-500 bg-blue-500/10 flex items-center justify-center">
+                        <span className="text-[8px] text-blue-600 font-bold bg-white/85 px-1 rounded-sm shadow-2xs">Área Segura</span>
+                      </div>
+
+                      {/* Child/Tracker Pin */}
+                      <div className="absolute top-[40%] left-[42%] flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-white shadow-md flex items-center justify-center text-white text-[10px] font-bold animate-bounce">
+                          👦
+                        </div>
+                        <div className="bg-slate-900 text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 shadow-sm whitespace-nowrap">
+                          Lucas • Online
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Alert Box Mockup */}
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl mb-4 flex gap-2.5 items-start">
+                      <div className="p-1.5 bg-red-500 rounded-lg text-white mt-0.5">
+                        <Bell className="h-3.5 w-3.5 animate-bounce" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-red-900">Alerta de Saída</p>
+                        <p className="text-[10px] text-red-700 leading-tight">O dispositivo saiu do perímetro de segurança às 18:24.</p>
+                      </div>
+                    </div>
+
+                    {/* Device Status */}
+                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm mb-4">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status do Dispositivo</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-slate-50 p-2 rounded-lg text-center">
+                          <p className="text-[9px] text-slate-500">Bateria</p>
+                          <p className="font-bold text-slate-800">88%</p>
+                        </div>
+                        <div className="bg-slate-50 p-2 rounded-lg text-center">
+                          <p className="text-[9px] text-slate-500">Sinal GPS</p>
+                          <p className="font-bold text-slate-800">Excelente</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Action Button */}
+                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 mt-auto">
+                      <Smartphone className="w-3.5 h-3.5" /> Ligar para Pulseira
+                    </button>
+                  </div>
+
+                  {/* Home Indicator */}
+                  <div className="h-5 bg-slate-900 flex items-center justify-center pb-1 z-30">
+                    <div className="w-28 h-1 bg-slate-700 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
