@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Users, Watch, ShieldAlert, History, Activity, Navigation, CheckCircle } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { dbService } from "@/lib/db"
 
 interface RecentEvent {
   id: string
@@ -20,47 +20,33 @@ export default function DashboardPage() {
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([])
   const [loading, setLoading] = useState(true)
 
-  const adminId = '11111111-1111-1111-1111-111111111111'
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true)
+      try {
+        // 1. Total de Crianças
+        const children = await dbService.getChildren()
+        setChildrenCount(children.length)
 
-      // 1. Total de Crianças
-      const { count: cCount } = await supabase
-        .from('children')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', adminId)
-      setChildrenCount(cCount || 0)
+        // 2. Pulseiras Ativas
+        const bracelets = await dbService.getBracelets()
+        const activeBracelets = bracelets.filter(b => b.is_connected)
+        setActiveBraceletsCount(activeBracelets.length)
 
-      // 2. Pulseiras Ativas (is_connected = true)
-      // First we need to get bracelets linked to this user's children
-      // For simplicity in the prototype, we just count all connected bracelets if we only have one user
-      const { count: bCount } = await supabase
-        .from('bracelets')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_connected', true)
-      setActiveBraceletsCount(bCount || 0)
+        // 3. Área Segura
+        const safeAreas = await dbService.getSafeAreas()
+        if (safeAreas.length > 0) {
+          setSafeAreaName(safeAreas[0].name)
+        } else {
+          setSafeAreaName("Nenhuma")
+        }
 
-      // 3. Área Segura
-      const { data: safeArea } = await supabase
-        .from('safe_areas')
-        .select('name')
-        .eq('user_id', adminId)
-        .limit(1)
-        .single()
-      if (safeArea) {
-        setSafeAreaName(safeArea.name)
+        // 4. Últimos Eventos
+        const events = await dbService.getEventHistory()
+        setRecentEvents(events.slice(0, 3))
+      } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error)
       }
-
-      // 4. Últimos Eventos
-      const { data: events } = await supabase
-        .from('event_history')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3)
-      setRecentEvents(events || [])
-
       setLoading(false)
     }
 

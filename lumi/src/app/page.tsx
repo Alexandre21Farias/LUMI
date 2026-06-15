@@ -49,27 +49,10 @@ export default function LandingPage() {
                   </Button>
                 </Link>
                 <Link href="/login" className="w-full sm:w-auto">
-                  <Button className="w-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8 py-6 text-lg font-semibold shadow-xl shadow-blue-500/20 hover:shadow-indigo-500/30 transition-all">
+                  <Button className="w-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8 py-6 text-lg font-semibold shadow-xl shadow-blue-500/20 hover:shadow-indigo-500/30 transition-all text-white">
                     Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-              </div>
-              
-              {/* Imagem ilustrativa / Mockup */}
-              <div className="mt-16 w-full max-w-4xl mx-auto relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-1000"></div>
-                <div className="relative bg-white/70 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl p-6 flex flex-col md:flex-row items-center overflow-hidden h-64 md:h-96">
-                   <div className="flex-1 flex justify-center items-center h-full w-full bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl relative border border-blue-100/30">
-                     <div className="absolute inset-0 bg-grid-slate-900/[0.02] [mask-image:linear-gradient(0deg,transparent,black)]"></div>
-                     <div className="w-56 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold tracking-widest shadow-xl shadow-blue-500/20 relative z-10 transition-transform group-hover:scale-105 duration-500">
-                        PULSEIRA LUMI
-                     </div>
-                     <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-600 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-500/20 flex items-center gap-1.5 animate-pulse">
-                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                       Sinal de GPS Ativo
-                     </div>
-                   </div>
-                </div>
               </div>
             </div>
           </div>

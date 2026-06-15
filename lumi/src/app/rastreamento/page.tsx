@@ -5,7 +5,8 @@ import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Navigation, ShieldAlert, CheckCircle2 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { dbService } from "@/lib/db"
+import { useGeolocation } from "@/hooks/useGeolocation"
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false })
 
@@ -34,75 +35,102 @@ interface BraceletInfo {
 }
 
 export default function RastreamentoPage() {
-  const [positionIndex, setPositionIndex] = useState(0)
+  const { latitude, longitude } = useGeolocation()
   const [route, setRoute] = useState<RoutePoint[]>([])
   const [safeArea, setSafeArea] = useState<SafeAreaInfo | null>(null)
   const [braceletInfo, setBraceletInfo] = useState<BraceletInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchTrackingData = async () => {
-      setLoading(true)
-      
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
+  }
+
+  const fetchTrackingData = async (showLoading = true) => {
+    await Promise.resolve()
+    if (showLoading) setLoading(true)
+    
+    try {
       // 1. Área Segura
-      const { data: areaData } = await supabase
-        .from('safe_areas')
-        .select('*')
-        .limit(1)
-        .single()
-        
-      if (areaData) {
+      const safeAreas = await dbService.getSafeAreas()
+      if (safeAreas.length > 0) {
         setSafeArea({
-          lat: areaData.lat,
-          lng: areaData.lng,
-          radius: areaData.radius,
-          name: areaData.name
+          lat: safeAreas[0].lat,
+          lng: safeAreas[0].lng,
+          radius: safeAreas[0].radius,
+          name: safeAreas[0].name
         })
       }
 
-      // 2. Pulseira e Criança (vamos pegar a primeira conectada)
-      const { data: bData } = await supabase
-        .from('bracelets')
-        .select('*, children(name, photo_url)')
-        .eq('is_connected', true)
-        .limit(1)
-        .single()
+      // 2. Pulseira e Criança (pegar a primeira conectada)
+      const bracelets = await dbService.getBracelets()
+      const activeBracelet = bracelets.find(b => b.is_connected)
 
-      if (bData) {
-        setBraceletInfo(bData)
+      if (activeBracelet) {
+        let childInfo = undefined
+        if (activeBracelet.child_id) {
+          const child = await dbService.getChildById(activeBracelet.child_id)
+          if (child) {
+            childInfo = { name: child.name, photo_url: child.photo_url || '' }
+          }
+        }
+
+        setBraceletInfo({
+          id: activeBracelet.id,
+          code: activeBracelet.code,
+          is_connected: activeBracelet.is_connected,
+          children: childInfo
+        })
         
         // 3. Localizações para essa pulseira
-        const { data: lData } = await supabase
-          .from('locations')
-          .select('*')
-          .eq('bracelet_id', bData.id)
-          .order('created_at', { ascending: true })
-          
-        if (lData && lData.length > 0) {
-          setRoute(lData.map(loc => ({
+        const locations = await dbService.getLocations(activeBracelet.id)
+        if (locations && locations.length > 0) {
+          setRoute(locations.map(loc => ({
             lat: loc.lat,
             lng: loc.lng,
             time: new Date(loc.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            label: "Localização registrada" // Ideal seria Geocoding reverso, mas mantemos genérico
+            label: "Localização registrada"
           })))
         }
       }
-
-      setLoading(false)
+    } catch (error) {
+      console.error("Erro ao buscar dados de rastreamento:", error)
     }
 
-    fetchTrackingData()
+    if (showLoading) setLoading(false)
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTrackingData(true)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
-  // Simulação de movimento contínuo pelo histórico de localizações
+  // Capturar e gravar localização do apresentador em tempo real
   useEffect(() => {
-    if (route.length <= 1) return
-    
-    const interval = setInterval(() => {
-      setPositionIndex((prev) => (prev + 1) % route.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [route.length])
+    if (!latitude || !longitude || !braceletInfo?.id) return
+
+    const saveCurrentLocation = async () => {
+      const sessionKey = `saved_loc_${latitude.toFixed(5)}_${longitude.toFixed(5)}`
+      if (sessionStorage.getItem(sessionKey)) return
+
+      try {
+        await dbService.addLocation(braceletInfo.id, latitude, longitude)
+        sessionStorage.setItem(sessionKey, 'true')
+        // Recarrega os dados da rota incluindo o novo ponto
+        fetchTrackingData(false)
+      } catch (error) {
+        console.error("Erro ao salvar localização:", error)
+      }
+    }
+
+    saveCurrentLocation()
+  }, [latitude, longitude, braceletInfo?.id])
 
   // Helpers
   const getDistanceFromLatLonInM = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -131,13 +159,14 @@ export default function RastreamentoPage() {
         <div className="flex items-center justify-center h-full flex-col">
           <ShieldAlert className="w-16 h-16 text-slate-300 mb-4" />
           <h2 className="text-xl font-bold text-slate-700">Dados insuficientes</h2>
-          <p className="text-slate-500">Verifique se existe uma área segura e locais registrados para a pulseira ativa.</p>
+          <p className="text-slate-500">Aguardando sinal de GPS ou configuração de área segura.</p>
         </div>
       </DashboardLayout>
     )
   }
 
-  const currentPosition = route[positionIndex]
+  // Sem loop: a posição atual mostrada é sempre o último ponto registrado
+  const currentPosition = route[route.length - 1]
   const distanceToCenter = getDistanceFromLatLonInM(
     currentPosition.lat, 
     currentPosition.lng, 
@@ -150,7 +179,7 @@ export default function RastreamentoPage() {
     <DashboardLayout>
       <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-800 flex items-center">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-800 flex items-center font-display">
             <MapPin className="mr-2 h-8 w-8 text-blue-500" />
             Rastreamento em Tempo Real
           </h2>
@@ -200,9 +229,8 @@ export default function RastreamentoPage() {
           
           <Card className="absolute bottom-4 left-4 z-[400] max-w-sm shadow-lg border-0 bg-white/95 backdrop-blur">
              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500">
-                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                   <img src={braceletInfo?.children?.photo_url || "https://ui-avatars.com/api/?name=User&background=2563eb&color=fff"} alt={braceletInfo?.children?.name || 'Criança'} className="w-full h-full object-cover" />
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md">
+                   {braceletInfo?.children?.name ? getInitials(braceletInfo.children.name) : 'LU'}
                 </div>
                 <div>
                    <h3 className="font-bold text-slate-900">{braceletInfo?.children?.name || 'Criança não vinculada'}</h3>

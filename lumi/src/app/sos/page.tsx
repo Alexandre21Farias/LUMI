@@ -1,44 +1,78 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Bell, AlertTriangle, CheckCircle2 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { dbService } from "@/lib/db"
 
 export default function SOSPage() {
   const [sosStatus, setSosStatus] = useState<"idle" | "active" | "resolved">("idle")
   const [isTriggering, setIsTriggering] = useState(false)
+  const [activeAlertId, setActiveAlertId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const checkActiveAlert = async () => {
+      try {
+        const alerts = await dbService.getAlerts()
+        const activeSos = alerts.find(a => a.type === 'SOS' && !a.resolved)
+        if (activeSos) {
+          setActiveAlertId(activeSos.id)
+          setSosStatus("active")
+        }
+      } catch (error) {
+        console.error("Erro ao verificar alertas ativos:", error)
+      }
+    }
+    checkActiveAlert()
+  }, [])
 
   const triggerSOS = async () => {
     setIsTriggering(true)
-    
-    // Buscar primeira pulseira ativa para mockar quem enviou
-    const { data: bData } = await supabase
-      .from('bracelets')
-      .select('id')
-      .eq('is_connected', true)
-      .limit(1)
-      .single()
+    try {
+      const bracelets = await dbService.getBracelets()
+      const activeB = bracelets.find(b => b.is_connected)
 
-    if (bData) {
-      await supabase.from('event_history').insert([{
-        bracelet_id: bData.id,
-        event_type: 'SOS',
-        description: 'O botão de emergência foi acionado. Responsável notificado.'
-      }])
+      if (activeB) {
+        const alertObj = await dbService.addAlert(activeB.id, 'SOS')
+        await dbService.addEvent(
+          activeB.id,
+          'SOS',
+          'O botão de emergência foi acionado. Responsável notificado.'
+        )
+        setActiveAlertId(alertObj.id)
+      }
+      setSosStatus("active")
+    } catch (error) {
+      console.error("Erro ao acionar SOS:", error)
     }
-    
-    setSosStatus("active")
     setIsTriggering(false)
   }
 
   const resolveSOS = async () => {
-    // Poderiamos registrar a resolução no banco, mas como é só um protótipo,
-    // o foco maior foi criar o evento inicial para aparecer no Histórico.
-    setSosStatus("resolved")
-    setTimeout(() => setSosStatus("idle"), 3000)
+    try {
+      if (activeAlertId) {
+        await dbService.resolveAlert(activeAlertId)
+        const bracelets = await dbService.getBracelets()
+        const activeB = bracelets.find(b => b.is_connected)
+        if (activeB) {
+          await dbService.addEvent(
+            activeB.id,
+            'SAFE_AREA_ENTER',
+            'Situação resolvida. Alerta SOS finalizado.'
+          )
+        }
+      }
+      setSosStatus("resolved")
+      setTimeout(() => {
+        setSosStatus("idle")
+        setActiveAlertId(null)
+      }, 3000)
+    } catch (error) {
+      console.error("Erro ao resolver SOS:", error)
+      setSosStatus("idle")
+    }
   }
 
   return (

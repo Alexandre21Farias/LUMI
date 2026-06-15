@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { History, ShieldAlert, Navigation, BatteryWarning, MapPin, CheckCircle, Activity } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { dbService } from "@/lib/db"
 
 interface EventHistory {
   id: string
@@ -19,14 +19,11 @@ export default function HistoricoPage() {
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('event_history')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50) // Limite razoável para a demonstração
-      
-      if (!error && data) {
+      try {
+        const data = await dbService.getEventHistory()
         setEvents(data)
+      } catch (error) {
+        console.error("Erro ao buscar histórico:", error)
       }
       setLoading(false)
     }

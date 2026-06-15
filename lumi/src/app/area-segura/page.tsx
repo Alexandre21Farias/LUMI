@@ -1,10 +1,10 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
-import { ShieldAlert, Save, MapPin } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { ShieldAlert, Save, MapPin, Trash2, Home, Plus } from "lucide-react"
+import { dbService, SafeArea } from "@/lib/db"
 import { useGeolocation } from "@/hooks/useGeolocation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,40 +15,64 @@ const Map = dynamic(() => import("@/components/Map"), { ssr: false })
 export default function AreaSeguraPage() {
   const { latitude, longitude, loading: geoLoading, error: geoError } = useGeolocation()
   
-  const [safeAreaId, setSafeAreaId] = useState<string | null>(null)
+  const [safeAreas, setSafeAreas] = useState<SafeArea[]>([])
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null)
+  
+  // Form states
+  const [name, setName] = useState<string>("")
   const [centerLat, setCenterLat] = useState<number>(-12.25301)
   const [centerLng, setCenterLng] = useState<number>(-38.95669)
   const [radius, setRadius] = useState<number>(300)
-  const [name, setName] = useState<string>("Minha Área Segura")
+  
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // O Admin ID mockado usado no banco
-  const adminId = '11111111-1111-1111-1111-111111111111'
-
-  // Fetch initial safe area from DB
-  useEffect(() => {
-    const fetchSafeArea = async () => {
-      setLoading(true)
-      const { data } = await supabase
-        .from('safe_areas')
-        .select('*')
-        .eq('user_id', adminId)
-        .limit(1)
-        .single()
-      
-      if (data) {
-        setSafeAreaId(data.id)
-        setName(data.name)
-        setCenterLat(data.lat)
-        setCenterLng(data.lng)
-        setRadius(data.radius)
+  const fetchSafeAreas = useCallback(async () => {
+    await Promise.resolve()
+    setLoading(true)
+    try {
+      const data = await dbService.getSafeAreas()
+      setSafeAreas(data)
+      if (data.length > 0 && !selectedAreaId) {
+        setSelectedAreaId(data[0].id)
+        setName(data[0].name)
+        setCenterLat(data[0].lat)
+        setCenterLng(data[0].lng)
+        setRadius(data[0].radius)
       }
-      setLoading(false)
+    } catch (error) {
+      console.error("Erro ao buscar áreas seguras:", error)
     }
+    setLoading(false)
+  }, [selectedAreaId])
 
-    fetchSafeArea()
-  }, [])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSafeAreas()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchSafeAreas])
+
+  const handleSelectArea = (area: SafeArea) => {
+    setSelectedAreaId(area.id)
+    setName(area.name)
+    setCenterLat(area.lat)
+    setCenterLng(area.lng)
+    setRadius(area.radius)
+  }
+
+  const handleAddNewArea = () => {
+    setSelectedAreaId(null)
+    setName("Nova Área")
+    setRadius(300)
+    if (latitude && longitude) {
+      setCenterLat(latitude)
+      setCenterLng(longitude)
+    } else {
+      setCenterLat(-12.25301)
+      setCenterLng(-38.95669)
+    }
+  }
 
   const handleUseMyLocation = () => {
     if (latitude && longitude) {
@@ -59,48 +83,79 @@ export default function AreaSeguraPage() {
     }
   }
 
+  const handleSaveCurrentAsCasa = async () => {
+    if (!latitude || !longitude) {
+      alert("Aguardando sinal de GPS do navegador...")
+      return
+    }
+    setIsSaving(true)
+    try {
+      // Procura se já existe uma área com o nome "Casa"
+      const existingCasa = safeAreas.find(a => a.name.toLowerCase() === 'casa')
+      const saved = await dbService.saveSafeArea({
+        id: existingCasa?.id,
+        name: "Casa",
+        lat: latitude,
+        lng: longitude,
+        radius: 150
+      })
+      alert("Localização atual cadastrada como 'Casa' com sucesso!")
+      
+      // Recarrega
+      const data = await dbService.getSafeAreas()
+      setSafeAreas(data)
+      const newSelected = data.find(a => a.id === saved.id) || saved
+      handleSelectArea(newSelected)
+    } catch (error) {
+      const err = error as Error
+      alert("Erro ao cadastrar Casa: " + err.message)
+    }
+    setIsSaving(false)
+  }
+
   const handleSave = async () => {
     setIsSaving(true)
-    
-    if (safeAreaId) {
-      // Update
-      const { error } = await supabase
-        .from('safe_areas')
-        .update({
-          name,
-          radius: radius,
-          lat: centerLat,
-          lng: centerLng
-        })
-        .eq('id', safeAreaId)
+    try {
+      const saved = await dbService.saveSafeArea({
+        id: selectedAreaId || undefined,
+        name,
+        lat: centerLat,
+        lng: centerLng,
+        radius
+      })
+      alert("Área de segurança salva com sucesso!")
+      
+      // Recarregar
+      const data = await dbService.getSafeAreas()
+      setSafeAreas(data)
+      setSelectedAreaId(saved.id)
+    } catch (error) {
+      const err = error as Error
+      alert("Erro ao salvar: " + err.message)
+    }
+    setIsSaving(false)
+  }
 
-      if (error) alert("Erro ao salvar: " + error.message)
-      else alert("Área Segura atualizada com sucesso!")
-    } else {
-      // Insert
-      const { error } = await supabase
-        .from('safe_areas')
-        .insert([{
-          name,
-          radius: radius,
-          lat: centerLat,
-          lng: centerLng
-        }])
-
-      if (error) alert("Erro ao criar: " + error.message)
-      else {
-        alert("Área Segura criada com sucesso!")
-        // Ideally we should refetch to get the ID, but for demo it's fine.
+  const handleDeleteArea = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm("Tem certeza que deseja excluir esta área de segurança?")) {
+      try {
+        await dbService.deleteSafeArea(id)
+        if (selectedAreaId === id) {
+          setSelectedAreaId(null)
+        }
+        fetchSafeAreas()
+      } catch (error) {
+        const err = error as Error
+        alert("Erro ao excluir: " + err.message)
       }
     }
-    
-    setIsSaving(false)
   }
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full">Carregando dados da Área Segura...</div>
+        <div className="flex items-center justify-center h-full">Carregando áreas seguras...</div>
       </DashboardLayout>
     )
   }
@@ -111,12 +166,17 @@ export default function AreaSeguraPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <h2 className="text-3xl font-bold tracking-tight text-slate-800 flex items-center">
             <ShieldAlert className="mr-2 h-8 w-8 text-indigo-500" />
-            Configurar Área Segura
+            Configurar Áreas Seguras
           </h2>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Salvando..." : "Salvar Configurações"}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveCurrentAsCasa} variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+              <Home className="h-4 w-4 mr-2" /> Salvar Local Atual como Casa
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Salvando..." : "Salvar Configurações"}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1 min-h-0">
@@ -124,8 +184,31 @@ export default function AreaSeguraPage() {
           {/* Painel Lateral */}
           <div className="md:col-span-1 bg-white rounded-2xl shadow-sm border p-6 flex flex-col gap-6 overflow-y-auto">
             <div>
-              <h3 className="font-bold text-lg mb-4 text-slate-800">Parâmetros</h3>
-              <p className="text-sm text-slate-500 mb-6">Defina o ponto central e o tamanho da zona segura.</p>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg text-slate-800">Suas Áreas</h3>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleAddNewArea} title="Nova Área">
+                  <Plus className="h-4 w-4 text-indigo-600" />
+                </Button>
+              </div>
+              <div className="space-y-2 mb-6">
+                {safeAreas.map(area => (
+                  <div 
+                    key={area.id} 
+                    onClick={() => handleSelectArea(area)}
+                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${selectedAreaId === area.id ? 'bg-indigo-50 border-indigo-200 font-semibold' : 'bg-slate-50 hover:bg-slate-100 border-transparent'}`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      {area.name.toLowerCase() === 'casa' ? <Home className="h-4 w-4 text-indigo-600 shrink-0" /> : <ShieldAlert className="h-4 w-4 text-indigo-500 shrink-0" />}
+                      <span className="truncate text-sm text-slate-800">{area.name}</span>
+                    </div>
+                    <button onClick={(e) => handleDeleteArea(area.id, e)} className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <h3 className="font-bold text-sm text-slate-700 mb-2 border-t pt-4">Parâmetros da Área</h3>
             </div>
             
             <div className="space-y-4">
@@ -189,7 +272,7 @@ export default function AreaSeguraPage() {
                safeZoneRadius={radius} 
              />
              <div className="absolute bottom-6 left-6 z-[500] px-4 py-2 rounded-xl bg-white/90 shadow-lg backdrop-blur-sm">
-                <p className="text-sm font-medium text-slate-700">Dica: O mapa está centrado na sua Área Segura.</p>
+                <p className="text-sm font-medium text-slate-700">Dica: Selecione uma área na barra lateral para visualizá-la ou editá-la.</p>
              </div>
           </div>
 

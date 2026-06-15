@@ -5,37 +5,44 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Watch, MapPin, Battery, Droplets, Activity, Plus } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { dbService, Bracelet } from "@/lib/db"
 
-type Bracelet = {
-  id: string
-  code: string
-  child_id: string | null
-  battery: number
-  is_connected: boolean
-  color: string
-  water_resistant: boolean
-  created_at: string
+interface PopulatedBracelet extends Bracelet {
   children?: {
     name: string
-    photo_url: string
+    photo_url?: string
   }
 }
 
 export default function PulseirasPage() {
-  const [bracelets, setBracelets] = useState<Bracelet[]>([])
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
+  }
+
+  const [bracelets, setBracelets] = useState<PopulatedBracelet[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchBracelets = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('bracelets')
-        .select('*, children(name, photo_url)')
-        .order('created_at', { ascending: false })
-      
-      if (!error && data) {
-        setBracelets(data)
+      try {
+        const bList = await dbService.getBracelets()
+        const cList = await dbService.getChildren()
+        const populated: PopulatedBracelet[] = bList.map(b => {
+          const child = cList.find(c => c.id === b.child_id)
+          return {
+            ...b,
+            children: child ? { name: child.name, photo_url: child.photo_url || '' } : undefined
+          }
+        })
+        setBracelets(populated)
+      } catch (error) {
+        console.error("Erro ao buscar pulseiras:", error)
       }
       setLoading(false)
     }
@@ -124,9 +131,10 @@ export default function PulseirasPage() {
                       </p>
                       {bracelet.children ? (
                         <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={bracelet.children.photo_url} className="w-8 h-8 rounded-full" alt={bracelet.children.name} />
-                          <span className="font-medium text-slate-900">{bracelet.children.name}</span>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                             {getInitials(bracelet.children.name)}
+                           </div>
+                           <span className="font-medium text-slate-900">{bracelet.children.name}</span>
                         </div>
                       ) : (
                         <span className="font-medium text-slate-500">Nenhuma criança vinculada</span>

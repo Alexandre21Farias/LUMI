@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -21,13 +22,29 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Mock para a demonstração ou auth real se as chaves existirem
+      // Tenta buscar no banco de dados real
+      const { data, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .limit(1)
+        .single()
+
+      if (!dbError && data) {
+        localStorage.setItem('lumi_user', JSON.stringify(data))
+        router.push("/dashboard")
+        return
+      }
+
+      // Fallback para admin mockado se o banco de dados falhar
       if (email === "admin@lumi.com") {
+        const fallbackUser = { id: '11111111-1111-1111-1111-111111111111', name: 'Alexandre Lima', email: 'admin@lumi.com' }
+        localStorage.setItem('lumi_user', JSON.stringify(fallbackUser))
         setTimeout(() => {
           router.push("/dashboard")
         }, 1000)
       } else {
-        setError("Credenciais inválidas. Use admin@lumi.com")
+        setError("Credenciais inválidas. Use o e-mail cadastrado (ex: admin@lumi.com)")
         setLoading(false)
       }
     } catch {

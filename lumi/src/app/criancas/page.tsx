@@ -9,19 +9,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Users, AlertCircle, HeartPulse, Plus, Pencil, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { supabase } from "@/lib/supabase"
-
-type Child = {
-  id: string
-  name: string
-  age: number
-  blood_type: string
-  allergies: string
-  photo_url: string
-  user_id: string
-}
+import { dbService, Child } from "@/lib/db"
 
 export default function CriancasPage() {
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
+  }
+
   const [children, setChildren] = useState<Child[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -35,15 +34,11 @@ export default function CriancasPage() {
 
   const fetchChildren = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('children')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (error) {
+    try {
+      const data = await dbService.getChildren()
+      setChildren(data)
+    } catch (error) {
       console.error("Erro ao buscar crianças:", error)
-    } else {
-      setChildren(data || [])
     }
     setLoading(false)
   }
@@ -83,54 +78,36 @@ export default function CriancasPage() {
     const adminId = '11111111-1111-1111-1111-111111111111'
     const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563eb&color=fff`
 
-    if (editingChild) {
-      // Update
-      const { error } = await supabase
-        .from('children')
-        .update({
-          name,
-          age: parseInt(age),
-          blood_type: bloodType,
-          allergies,
-          photo_url: photoUrl
-        })
-        .eq('id', editingChild.id)
-        
-      if (!error) {
-        setIsModalOpen(false)
-        fetchChildren()
-      } else {
-        alert("Erro ao atualizar: " + error.message)
-      }
-    } else {
-      // Create
-      const { error } = await supabase
-        .from('children')
-        .insert([{
-          user_id: adminId,
-          name,
-          age: parseInt(age),
-          blood_type: bloodType,
-          allergies,
-          photo_url: photoUrl
-        }])
-
-      if (!error) {
-        setIsModalOpen(false)
-        fetchChildren()
-      } else {
-        alert("Erro ao criar: " + error.message)
-      }
+    try {
+      await dbService.saveChild({
+        id: editingChild?.id,
+        user_id: adminId,
+        name,
+        age: parseInt(age),
+        blood_type: bloodType,
+        allergies,
+        photo_url: photoUrl
+      })
+      setIsModalOpen(false)
+      fetchChildren()
+    } catch (error) {
+      const err = error as Error
+      alert("Erro ao salvar: " + err.message)
     }
   }
 
   const handleDelete = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir esta criança? Todos os dados vinculados serão perdidos.")) {
-      const { error } = await supabase.from('children').delete().eq('id', id)
-      if (!error) {
-        fetchChildren()
-      } else {
-        alert("Erro ao excluir: " + error.message)
+      try {
+        const success = await dbService.deleteChild(id)
+        if (success) {
+          fetchChildren()
+        } else {
+          alert("Erro ao excluir")
+        }
+      } catch (error) {
+        const err = error as Error
+        alert("Erro ao excluir: " + err.message)
       }
     }
   }
@@ -213,9 +190,8 @@ export default function CriancasPage() {
                 </div>
                 <CardContent className="pt-0 relative">
                   <div className="flex flex-col items-center gap-2 -mt-12 mb-4">
-                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-white z-10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={child.photo_url} alt={child.name} className="w-full h-full object-cover" />
+                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-2xl z-10">
+                      {getInitials(child.name)}
                     </div>
                     <div className="text-center w-full">
                       <h3 className="text-2xl font-bold text-slate-900 truncate px-2" title={child.name}>{child.name}</h3>
