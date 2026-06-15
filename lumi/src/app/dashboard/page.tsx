@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Users, Watch, ShieldAlert, History, Activity, Navigation, CheckCircle } from "lucide-react"
 import { dbService } from "@/lib/db"
 
@@ -74,6 +75,21 @@ export default function DashboardPage() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight text-slate-800">Visão Geral</h2>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="font-bold text-lg text-blue-900 flex items-center gap-2">
+              <i className="ti ti-info-circle text-blue-600 text-xl"></i>
+              Projeto Acadêmico em Desenvolvimento
+            </h3>
+            <p className="text-sm text-blue-700 max-w-2xl">
+              O LUMI é um protótipo de hardware e software para monitoramento inteligente e segurança de crianças. Este painel simula a geolocalização capturada pelas pulseiras e permite configurar cercas virtuais.
+            </p>
+          </div>
+          <Badge className="bg-blue-100 hover:bg-blue-200 text-blue-800 border-0 py-1.5 px-3 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0">
+            Versão de Teste v1.0
+          </Badge>
         </div>
         
         {loading ? (

@@ -13,7 +13,7 @@ describe('Sidebar Component', () => {
     render(<Sidebar />)
 
     // Check brand name
-    expect(screen.getByText('LUMI')).toBeInTheDocument()
+    expect(screen.getByText('LUMI.')).toBeInTheDocument()
 
     // Check routes
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
@@ -29,6 +29,6 @@ describe('Sidebar Component', () => {
     render(<Sidebar />)
 
     const dashboardLink = screen.getByRole('link', { name: /dashboard/i })
-    expect(dashboardLink).toHaveClass('text-white bg-white/10')
+    expect(dashboardLink).toHaveClass('active')
   })
 })

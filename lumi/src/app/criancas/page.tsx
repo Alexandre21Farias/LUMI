@@ -130,31 +130,34 @@ export default function CriancasPage() {
                 <Plus className="h-4 w-4 mr-2" /> Nova Criança
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{editingChild ? "Editar Criança" : "Cadastrar Nova Criança"}</DialogTitle>
+            <DialogContent className="sm:max-w-[425px] bg-white rounded-2xl border border-slate-100 p-6 shadow-2xl">
+              <DialogHeader className="pb-4 border-b">
+                <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <i className="ti ti-user-edit text-indigo-500 text-2xl"></i>
+                  {editingChild ? "Editar Criança" : "Cadastrar Nova Criança"}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Nome Completo</Label>
-                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: João Silva" />
+                <div className="space-y-1">
+                  <Label className="text-sm font-semibold text-slate-600">Nome Completo</Label>
+                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: João Silva" className="rounded-xl border-slate-200 focus:border-indigo-500" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Idade</Label>
-                  <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Ex: 8" />
+                <div className="space-y-1">
+                  <Label className="text-sm font-semibold text-slate-600">Idade</Label>
+                  <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Ex: 8" className="rounded-xl border-slate-200 focus:border-indigo-500" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Tipo Sanguíneo</Label>
-                  <Input value={bloodType} onChange={e => setBloodType(e.target.value)} placeholder="Ex: O+" />
+                <div className="space-y-1">
+                  <Label className="text-sm font-semibold text-slate-600">Tipo Sanguíneo</Label>
+                  <Input value={bloodType} onChange={e => setBloodType(e.target.value)} placeholder="Ex: O+" className="rounded-xl border-slate-200 focus:border-indigo-500" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Alergias</Label>
-                  <Input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ex: Amendoim (ou Nenhuma)" />
+                <div className="space-y-1">
+                  <Label className="text-sm font-semibold text-slate-600">Alergias</Label>
+                  <Input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ex: Amendoim (ou Nenhuma)" className="rounded-xl border-slate-200 focus:border-indigo-500" />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSave}>Salvar</Button>
+              <DialogFooter className="pt-4 border-t flex gap-2">
+                <Button variant="outline" onClick={() => setIsModalOpen(false)} className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50">Cancelar</Button>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5" onClick={handleSave}>Salvar</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

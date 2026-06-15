@@ -4,7 +4,7 @@ import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Navigation, ShieldAlert, CheckCircle2 } from "lucide-react"
+import { Navigation, ShieldAlert } from "lucide-react"
 import { dbService } from "@/lib/db"
 import { useGeolocation } from "@/hooks/useGeolocation"
 
@@ -178,16 +178,16 @@ export default function RastreamentoPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-800 flex items-center font-display">
-            <MapPin className="mr-2 h-8 w-8 text-blue-500" />
-            Rastreamento em Tempo Real
-          </h2>
-          
-          <div className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 ${isInsideSafeZone ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-            {isInsideSafeZone ? <CheckCircle2 className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
-            {isInsideSafeZone ? "Dentro da Área Segura" : "Fora da Área Segura"}
+        <div className="page-header">
+          <div className="page-title">
+            <i className="ti ti-map-pin" aria-hidden="true"></i>
+            <h1>Rastreamento em Tempo Real</h1>
           </div>
+          
+          <span className={isInsideSafeZone ? "status-badge status-badge--success" : "status-badge status-badge--danger"}>
+            <i className={isInsideSafeZone ? "ti ti-shield-check" : "ti ti-shield-off"}></i>
+            {isInsideSafeZone ? "Dentro da Área Segura" : "Fora da Área Segura"}
+          </span>
         </div>
 
         <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border overflow-hidden relative">
