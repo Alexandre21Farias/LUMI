@@ -13,7 +13,7 @@ describe('Sidebar Component', () => {
     render(<Sidebar />)
 
     // Check brand name
-    expect(screen.getByText('LUMI.')).toBeInTheDocument()
+    expect(screen.getByText('LUMI')).toBeInTheDocument()
 
     // Check routes
     expect(screen.getByText('Dashboard')).toBeInTheDocument()

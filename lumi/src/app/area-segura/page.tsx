@@ -169,7 +169,7 @@ export default function AreaSeguraPage() {
             Configurar Áreas Seguras
           </h2>
           <div className="flex gap-2">
-            <Button onClick={handleSaveCurrentAsCasa} variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+            <Button onClick={handleSaveCurrentAsCasa} disabled variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
               <Home className="h-4 w-4 mr-2" /> Salvar Local Atual como Casa
             </Button>
             <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
